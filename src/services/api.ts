@@ -23,3 +23,11 @@ export async function searchDrugs(query: string, page = 1, signal?: AbortSignal)
   }
   return body;
 }
+
+export async function fetchDrug(id: string, signal?: AbortSignal): Promise<Drug> {
+  const response = await fetch(`${baseUrl}/api/drugs/${encodeURIComponent(id)}`, { signal });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.message || '제품 정보를 불러오지 못했어요.');
+  if (!body.item || body.item.id !== id || typeof body.item.name !== 'string') throw new Error('제품 정보 형식이 올바르지 않아요.');
+  return body.item;
+}

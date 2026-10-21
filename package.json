@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "test:server": "node --test server/*.test.mjs",
     "export:web": "expo export --platform web",
-    "check:api": "node --env-file-if-exists=.env scripts/check-api.mjs"
+    "check:api": "node --env-file-if-exists=.env scripts/check-api.mjs",
+    "test:storage": "node --experimental-strip-types --test src/data/*.test.mjs"
   },
   "dependencies": {
     "expo": "~57.0.30",
@@ -23,6 +24,7 @@
     "expo-font": "~57.0.4",
     "expo-linking": "~57.0.13",
     "expo-router": "~57.0.28",
+    "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",

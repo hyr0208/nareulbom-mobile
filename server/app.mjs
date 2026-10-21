@@ -1,6 +1,6 @@
 import http from 'node:http';
-import { ApiError, searchDrugs } from './mfds.mjs';
-export function createApp({ search = searchDrugs, origin = process.env.CORS_ORIGIN || 'http://localhost:8081' } = {}) {
+import { ApiError, searchDrugs, getDrug } from './mfds.mjs';
+export function createApp({ search = searchDrugs, detail = getDrug, origin = process.env.CORS_ORIGIN || 'http://localhost:8081' } = {}) {
   return http.createServer(async (request, response) => {
     const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, OPTIONS', Vary: 'Origin' };
     const send = (status, body) => { response.writeHead(status, headers); response.end(JSON.stringify(body)); };
@@ -9,6 +9,11 @@ export function createApp({ search = searchDrugs, origin = process.env.CORS_ORIG
       const url = new URL(request.url, 'http://localhost');
       if (request.method !== 'GET') return send(405, { message: '지원하지 않는 요청이에요.' });
       if (url.pathname === '/health') return send(200, { status: 'ok', service: 'nareulbom-api', drugSearchConfigured: Boolean(process.env.MFDS_SERVICE_KEY) });
+      if (url.pathname.startsWith('/api/drugs/')) {
+        const id = url.pathname.slice('/api/drugs/'.length);
+        if (!/^[0-9]{9}$/.test(id)) throw new ApiError(400, '올바른 제품 코드가 필요해요.');
+        return send(200, { item: await detail(id) });
+      }
       if (url.pathname === '/api/drugs') {
         const query = (url.searchParams.get('q') || '').trim();
         if (!query || query.length > 100) throw new ApiError(400, '검색어를 1~100자로 입력해 주세요.');

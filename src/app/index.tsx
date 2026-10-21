@@ -7,7 +7,7 @@ import { useSession } from '@/data/session';
 
 export default function Home() {
   const router = useRouter();
-  const { medicines } = useSession();
+  const { medicines, consentAt, ready } = useSession();
   return <Page eyebrow="나를봄" title="나를 챙기는 일상" description="약 정보부터 매일의 건강관리까지.">
     <Pressable accessibilityRole="button" accessibilityLabel="약 검색하기" onPress={() => router.push('/search')} style={({ pressed }) => [local.search, { opacity: pressed ? 0.6 : 1 }]}>
       <View accessible={false} style={local.searchIcon}><View style={local.searchCircle} /><View style={local.searchHandle} /></View>
@@ -26,7 +26,7 @@ export default function Home() {
       <View style={local.hairline} />
       <Pressable accessibilityRole="button" accessibilityLabel="내 정보 보기" onPress={() => router.push('/profile')} style={({ pressed }) => [local.menuRow, { opacity: pressed ? 0.6 : 1 }]}><View style={local.menuCopy}><Text style={local.menuTitle}>나의 건강정보</Text><Text style={local.caption}>건강 프로필과 계정 관리</Text></View><Text accessible={false} style={local.chevron}>›</Text></Pressable>
     </View>
-    <Note>개발 미리보기 · 복용 목록은 앱 실행 중에만 유지돼요.</Note>
+    <Note>{!ready ? '복용 정보를 불러오는 중이에요.' : consentAt ? '이 기기에 복용 목록과 일정을 보관하고 있어요.' : '임시 복용함 · 기기에 보관하려면 내 정보에서 동의해 주세요.'}</Note>
   </Page>;
 }
 const local = StyleSheet.create({

@@ -68,3 +68,25 @@ test('HTTP pagination rejects malformed values before requesting upstream', asyn
     assert.equal(response.status, 200); assert.equal((await response.json()).page, 2); assert.equal(calls, 1);
   } finally { await new Promise(resolve => server.close(resolve)); }
 });
+
+test('product detail lookup uses the exact product code and rejects missing products', async () => {
+  const {getDrug}=await import('./mfds.mjs');
+  const row={itemSeq:'202106092',itemName:'테스트 제품'};
+  const item=await getDrug('202106092',{key:'test',fetchImpl:async url=>{
+    assert.equal(url.searchParams.get('itemSeq'),'202106092');
+    assert.equal(url.searchParams.has('itemName'),false);
+    return {ok:true,json:async()=>({header:{resultCode:'00'},body:{totalCount:1,items:[row]}})};
+  }});
+  assert.equal(item.id,'202106092');
+  await assert.rejects(getDrug('202106092',{key:'test',fetchImpl:async()=>({ok:true,json:async()=>({header:{resultCode:'00'},body:{totalCount:0}})})}),error=>error.status===404);
+});
+test('detail route validates code before calling upstream', async () => {
+  let calls=0;const server=createApp({detail:async id=>{calls++;return {id,name:'테스트 제품'};}});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try {
+    const base=`http://127.0.0.1:${server.address().port}`;
+    assert.equal((await fetch(`${base}/api/drugs/not-a-code`)).status,400);assert.equal(calls,0);
+    const response=await fetch(`${base}/api/drugs/202106092`);
+    assert.equal(response.status,200);assert.equal((await response.json()).item.id,'202106092');assert.equal(calls,1);
+  }finally {await new Promise(resolve=>server.close(resolve));}
+});

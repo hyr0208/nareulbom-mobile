@@ -4,11 +4,11 @@ export class ApiError extends Error {
 function plain(value) {
   return String(value ?? '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
 }
-export async function searchDrugs(query, { key = process.env.MFDS_SERVICE_KEY, fetchImpl = fetch, page = 1 } = {}) {
+export async function searchDrugs(query, { key = process.env.MFDS_SERVICE_KEY, fetchImpl = fetch, page = 1, itemSeq } = {}) {
   if (!key?.trim()) throw new ApiError(503, '현재 약 검색을 준비 중이에요. 잠시 후 다시 이용해 주세요.');
   if (!Number.isSafeInteger(page) || page < 1 || page > 10000) throw new ApiError(400, '올바른 페이지 번호가 필요해요.');
   const url = new URL('https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList');
-  url.search = new URLSearchParams({ serviceKey: key.trim(), itemName: query, pageNo: String(page), numOfRows: '20', type: 'json' }).toString();
+  url.search = new URLSearchParams({ serviceKey: key.trim(), ...(itemSeq ? { itemSeq } : { itemName: query }), pageNo: String(page), numOfRows: '20', type: 'json' }).toString();
   let response;
   try { response = await fetchImpl(url, { signal: AbortSignal.timeout(10000) }); }
   catch { throw new ApiError(502, '공공데이터 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.'); }
@@ -30,4 +30,11 @@ export async function searchDrugs(query, { key = process.env.MFDS_SERVICE_KEY, f
     sourceUrl: `https://nedrug.mfds.go.kr/pbp/CCBBB01/getItemDetail?itemSeq=${encodeURIComponent(item.itemSeq)}`,
   }));
   return { items, total, page, pageSize: 20, hasMore: items.length > 0 && page * 20 < total };
+}
+
+export async function getDrug(id, options = {}) {
+  const result = await searchDrugs('', { ...options, itemSeq: id });
+  const item = result.items.find(item => item.id === id);
+  if (!item) throw new ApiError(404, '현재 공개된 제품 설명을 찾지 못했어요. 포장 또는 약사에게 확인해 주세요.');
+  return item;
 }
