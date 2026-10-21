@@ -7,9 +7,12 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "kr.co.uulab.nareulbom"
     },
-    "android": {},
+    "android": {
+      "package": "kr.co.uulab.nareulbom"
+    },
     "web": {
       "bundler": "metro",
       "output": "static"
