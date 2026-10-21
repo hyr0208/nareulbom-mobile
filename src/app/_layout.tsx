@@ -1,3 +1,5 @@
+import { AnimatedTabButton, AnimatedTabIcon } from '@/components/animated-tab';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useFonts } from 'expo-font';
 import { fonts } from '@/constants/fonts';
 import { Tabs } from 'expo-router';
@@ -11,6 +13,7 @@ const tabs = [
   { name: 'profile', title: '내 정보', icon: 'user' },
 ] as const;
 export default function Layout() {
+  const reducedMotion = useReducedMotion();
   const [loaded, error] = useFonts({
     [fonts.regular]: require('../../assets/fonts/Pretendard-Regular.otf'),
     [fonts.medium]: require('../../assets/fonts/Pretendard-Medium.otf'),
@@ -20,10 +23,13 @@ export default function Layout() {
   if (error) return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center', padding: 24 }}><NativeText>글꼴을 불러오지 못했어요. 앱을 다시 실행해 주세요.</NativeText></View>;
   if (!loaded) return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator accessibilityLabel="글꼴 불러오는 중" color={c.green} /></View>;
   return <SessionProvider><StatusBar style="dark" /><Tabs screenOptions={{ headerShown: false,
+    animation: reducedMotion ? 'none' : 'fade',
+    transitionSpec: { animation: 'timing', config: { duration: 140 } },
+    tabBarButton: props => <AnimatedTabButton {...props} reducedMotion={reducedMotion} />,
     tabBarActiveTintColor: c.green, tabBarInactiveTintColor: c.muted,
     tabBarStyle: { backgroundColor: c.paper, borderTopColor: c.line }, tabBarLabelStyle: { fontSize: 11, fontFamily: fonts.semibold, fontWeight: 'normal' },
   }}>{tabs.map(tab => <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.title,
-    tabBarIcon: ({ color }) => <TabIcon name={tab.icon} color={color} />,
+    tabBarIcon: ({ color, focused }) => <AnimatedTabIcon focused={focused} reducedMotion={reducedMotion}><TabIcon name={tab.icon} color={color} /></AnimatedTabIcon>,
   }} />)}</Tabs></SessionProvider>;
 }
 
