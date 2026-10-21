@@ -15,7 +15,7 @@ export default function Medicines() {
   const [editing, setEditing] = useState<string | null>(null); const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState('');
   const router = useRouter(); const { medicines, removeMedicine, ready, busy } = useSession();
-  return <><Page eyebrow="챙겨봄" title="나의 복용함" description="복용 중인 약과 직접 입력한 일정을 관리해요.">
+  return <><Page icon="medicines" eyebrow="챙겨봄" title="나의 복용함" description="복용 중인 약과 직접 입력한 일정을 관리해요.">
     <StorageStatus />
     {!ready ? <ActivityIndicator color={colors.green} /> : medicines.length ? medicines.map(drug => <Card key={drug.id}>
       <Note>{drug.source==='manual'?'직접 등록 · 정보 미확인':drug.source==='permit'?'식약처 허가정보':'e약은요'}</Note><Note>{drug.manufacturer||'제조사 미입력'}</Note><Heading>{drug.name}</Heading>{drug.strength?<Body>제품 함량: {drug.strength}</Body>:null}{drug.source==='manual'&&<Note>공식 제품과 연결되지 않아 성분·상호작용 정보를 확인할 수 없어요.</Note>}

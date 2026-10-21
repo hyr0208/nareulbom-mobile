@@ -22,7 +22,7 @@ export default function SymptomScreen(){
   function open(url:string){setError('');void Linking.openURL(url).catch(()=>setError('페이지를 열지 못했어요. 인터넷 연결을 확인해 주세요.'));}
   const risksComplete=riskQuestions.every(item=>answers.risks[item.id]==='no');
   return <View style={st.safe}>
-    <Page key={stage} eyebrow="증상별 일반약 안내 · 첫 범위: 두통" title={stage===0?'증상부터 확인해요':stage===1?'먼저 위험 신호를 확인해요':stage===2?'지금 두통은 어떤가요?':result.title} description={stage===0?'증상 확인 뒤 약사와 상의할 일반약 성분을 안내해요.':stage===3?'현재 답변을 바탕으로 정리한 안내예요.':`${stage} / 2 · 모르는 항목은 모름으로 남겨주세요.`}>
+    <Page icon="symptoms" key={stage} eyebrow="증상별 일반약 안내 · 첫 범위: 두통" title={stage===0?'증상부터 확인해요':stage===1?'먼저 위험 신호를 확인해요':stage===2?'지금 두통은 어떤가요?':result.title} description={stage===0?'증상 확인 뒤 약사와 상의할 일반약 성분을 안내해요.':stage===3?'현재 답변을 바탕으로 정리한 안내예요.':`${stage} / 2 · 모르는 항목은 모름으로 남겨주세요.`}>
       <Pressable accessibilityRole="button" accessibilityLabel={stage===0?'홈으로 돌아가기':'이전 단계'} style={st.back} onPress={()=>{if(stage===0)router.replace('/');else if(stage===1)reset();else setStage(stage===3?1:stage-1);}}><Text style={st.link}>‹ {stage===0?'홈으로':'이전'}</Text></Pressable>
       {stage===0?<>
         <Card><Heading>현재는 두통을 다뤄요</Heading><Body>두통의 동반 증상과 지속 상태를 먼저 확인해요. 다른 증상과 처방약 선택·변경 안내는 준비 중이에요.</Body><Note>갑자기 극심한 두통, 마비·의식 변화·시력 상실 등의 증상이 있으면 앱 질문을 기다리지 말고 응급 진료를 받아 주세요. 한국 응급 신고는 119예요.</Note></Card>

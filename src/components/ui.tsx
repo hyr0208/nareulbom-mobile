@@ -1,12 +1,13 @@
+import { WellnessIcon, type WellnessIconKind } from '@/components/wellness-icon';
 import { fonts } from '@/constants/fonts';
 import { Text } from '@/components/app-text';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors as c } from '@/constants/theme';
-export function Page({ eyebrow, title, description, children }: { eyebrow: string; title: string; description?: string; children: ReactNode }) {
+export function Page({ eyebrow, title, description, icon, children }: { eyebrow: string; title: string; description?: string; icon?: WellnessIconKind; children: ReactNode }) {
   return <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.scroll}>
-    <View style={s.container}><Text style={s.eyebrow}>{eyebrow}</Text><Text accessibilityRole="header" style={s.title}>{title}</Text>
+    <View style={s.container}>{icon ? <View style={s.pageHeading}><View style={s.pageHeadingCopy}><Text style={s.eyebrow}>{eyebrow}</Text><Text accessibilityRole="header" style={s.title}>{title}</Text></View><WellnessIcon kind={icon}/></View> : <><Text style={s.eyebrow}>{eyebrow}</Text><Text accessibilityRole="header" style={s.title}>{title}</Text></>}
     {description && <Text style={s.description}>{description}</Text>}{children}</View>
   </ScrollView></SafeAreaView>;
 }
@@ -21,6 +22,7 @@ export function Button({ label, onPress, secondary = false, disabled = false }: 
     <Text style={[s.buttonText, secondary && { color: c.green }]}>{label}</Text></Pressable>;
 }
 export const s = StyleSheet.create({
+  pageHeading: { flexDirection: 'row', alignItems: 'center', gap: 16 }, pageHeadingCopy: { flex: 1, gap: 12 },
   safe: { flex: 1, backgroundColor: c.background }, scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 },
   container: { width: '100%', maxWidth: 680, alignSelf: 'center', gap: 20 },
   eyebrow: { color: c.green, fontSize: 12, fontWeight: '700', letterSpacing: 0 },

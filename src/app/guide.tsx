@@ -15,7 +15,7 @@ export default function GuideScreen() {
   const items=mode==='mine'?matches:guides.map(guide=>({guide,reasons:[] as GuideReason[]}));
   function editProfile(step:number){router.push({pathname:'/profile',params:{step:String(step)}});}
   return <>
-    <Page eyebrow="알아봄" title="내 몸을 알아가는 가이드" description="선택한 목표와 입력한 질환에 관련된 공식 자료를 모았어요.">
+    <Page icon="guide" eyebrow="알아봄" title="내 몸을 알아가는 가이드" description="선택한 목표와 입력한 질환에 관련된 공식 자료를 모았어요.">
       <View accessibilityRole="radiogroup" accessibilityLabel="가이드 보기 범위" style={st.tabs}>{([['mine','나의 가이드'],['all','전체 자료']] as const).map(([value,label])=><Pressable key={value} accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{checked:mode===value}} onPress={()=>setMode(value)} style={[st.tab,mode===value&&st.activeTab]}><Text style={[st.tabText,mode===value&&st.activeText]}>{label}</Text></Pressable>)}</View>
       {mode==='mine'&&<Note>연결 기준은 입력한 목표·질환명이에요. 개인별 진단·처방·영양제 추천 결과는 아니에요.</Note>}
       {mode==='mine'&&unmatched.length>0&&<View style={st.notice}><Heading>아직 연결한 자료가 없어요</Heading><Body>{unmatched.join(' · ')}</Body><Note>해당 질환의 가이드는 아직 준비되지 않았어요. 자료가 없다는 것이 주의할 점이 없다는 뜻은 아니에요.</Note><Button secondary label="입력한 질환명 확인" onPress={()=>editProfile(3)} /></View>}

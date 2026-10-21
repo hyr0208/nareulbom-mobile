@@ -42,7 +42,7 @@ export default function Search({onDone}:{onDone?:()=>void} = {}) {
     } finally { clearTimeout(timer); if (active.current === controller) { active.current = null; setLoading(false); } }
   }
   return <>
-    <Page eyebrow="찾아봄" title="궁금한 약, 찾아보세요." description="제품명으로 검색하고 정확한 약을 확인해요.">
+    <Page icon="search" eyebrow="찾아봄" title="궁금한 약, 찾아보세요." description="제품명으로 검색하고 정확한 약을 확인해요.">
       {onDone && <Button secondary label="문진으로 돌아가기" onPress={onDone} />}
       <View accessibilityRole="radiogroup" style={{flexDirection:'row',gap:10}}>{([['easy','일반약 설명'],['permit','전체 의약품']] as const).map(([value,label])=><Pressable key={value} accessibilityRole="radio" accessibilityState={{checked:source===value}} onPress={()=>{
         if(source===value)return;active.current?.abort();active.current=null;setLoading(false);setSource(value);setSearched(false);setItems([]);setError('');setPage(0);setTotal(0);setHasMore(false);setSelected(null);

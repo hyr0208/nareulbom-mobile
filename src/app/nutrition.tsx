@@ -13,7 +13,7 @@ export default function NutritionScreen(){
   const {candidates,questions,context}=nutritionCandidates(health,medicines);
   function edit(value:number){setStep(value);setEditing(true);}
   return <>
-    <Page eyebrow="나에게 맞는 영양제" title="나에게 맞는 영양소" description="알려주신 식습관과 섭취·검사 정보를 함께 살펴봤어요.">
+    <Page icon="nutrition" eyebrow="나에게 맞는 영양제" title="나에게 맞는 영양소" description="알려주신 식습관과 섭취·검사 정보를 함께 살펴봤어요.">
       <Button secondary label="홈으로 돌아가기" onPress={()=>router.replace('/')} />
       {!health?.profile.nutrition?<Card><Heading>나에게 필요한 후보부터 찾아봐요</Heading><Body>식습관과 이미 먹는 영양제, 의료진에게 안내받은 검사 결과에 따라 영양소 검토 후보가 달라져요.</Body><Button label="영양정보 질문에 답하기" onPress={()=>edit(6)} /></Card>:<><View style={st.row}><Text style={st.count}>확인할 영양소 {candidates.length}개</Text><Button secondary label="답변 수정" onPress={()=>edit(6)} /></View><Note>공식 자료의 입력 조건에 따른 초기 후보 안내예요. 전문 임상 검수를 마친 개인별 처방·상품·용량 추천은 아니에요.</Note></>}
       {candidates.map(candidate=>{const info=nutrientInfo[candidate.id];return <Card key={candidate.id}>

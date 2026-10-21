@@ -14,7 +14,7 @@ export default function Profile() {
   const [error,setError]=useState(''); const [message,setMessage]=useState('');
   const {health,medicines,consentAt,eraseHealth,eraseAll,busy,ready}=useSession();
   return <>
-    <Page eyebrow="돌아봄" title="나를 알아가는 공간" description="내 몸의 정보는 내가 선택하고 관리해요.">
+    <Page icon="profile" eyebrow="돌아봄" title="나를 알아가는 공간" description="내 몸의 정보는 내가 선택하고 관리해요.">
       <Card><Heading>내 건강 프로필</Heading>
         {health?<><Note>{health.remember?'이 기기에 보관 중':'이번 실행에서만 임시 유지 중'} · 건강정보 이용 동의 {new Date(health.consentAt).toLocaleDateString('ko-KR')}</Note><HealthSummary profile={health.profile} medicineCount={medicines.length} onEdit={step=>{setInitialStep(step);setEditing(true);}} /><Button label="건강정보 수정하기" disabled={!ready||busy} onPress={()=>{setInitialStep(1);setEditing(true);}} />
           {confirmHealth?<><Note>건강 프로필과 건강정보 이용·보관 동의를 삭제해요. 복용함은 유지되며 삭제한 건강정보는 복구할 수 없어요.</Note><Button label="건강정보 삭제하고 동의 철회" disabled={busy} onPress={()=>{setError('');void eraseHealth().then(()=>{setConfirmHealth(false);setMessage('건강정보와 관련 동의를 삭제했어요.');}).catch(e=>setError(e.message));}} /><Button secondary label="건강정보 삭제 취소" disabled={busy} onPress={()=>setConfirmHealth(false)} /></>:<Button secondary label="건강정보 삭제 안내" disabled={!ready||busy} onPress={()=>{setMessage('');setConfirmHealth(true);}} />}
