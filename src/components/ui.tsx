@@ -1,5 +1,7 @@
+import { fonts } from '@/constants/fonts';
+import { Text } from '@/components/app-text';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors as c } from '@/constants/theme';
 export function Page({ eyebrow, title, description, children }: { eyebrow: string; title: string; description?: string; children: ReactNode }) {
@@ -29,6 +31,6 @@ export const s = StyleSheet.create({
   body: { fontSize: 15, lineHeight: 25, color: '#62676E' }, note: { fontSize: 12, lineHeight: 20, color: c.muted },
   button: { minHeight: 48, backgroundColor: c.green, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   secondary: { backgroundColor: c.pale }, buttonText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
-  input: { minHeight: 52, borderWidth: 1, borderColor: c.line, backgroundColor: c.paper, borderRadius: 10, paddingHorizontal: 16, color: c.ink, fontSize: 16 },
+  input: { fontFamily: fonts.regular, minHeight: 52, borderWidth: 1, borderColor: c.line, backgroundColor: c.paper, borderRadius: 10, paddingHorizontal: 16, color: c.ink, fontSize: 16 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
 });

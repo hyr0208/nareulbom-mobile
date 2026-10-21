@@ -83,3 +83,10 @@ API 키와 사용자 건강정보를 클라이언트 번들·로그에 포함하
 - npm audit: 28건 (high 18, moderate 10). Expo/React Native 의존성 체인에 대한 경고 포함.
   자동 제안에 Expo 44 등 호환되지 않는 주요 버전 변경이 포함되어 강제 수정하지 않았다.
   외부 배포 전 취약 패키지별 영향과 SDK 호환 패치를 검토해야 한다.
+
+## 글꼴
+
+Pretendard 1.3.9의 Regular·Medium·SemiBold·Bold를 앱에 포함하고 expo-font로 불러옵니다.
+본문·제목·입력창·탭 라벨에 적용하며 외부 폰트 CDN을 사용하지 않습니다.
+출처: https://github.com/orioncactus/pretendard
+라이선스: SIL Open Font License 1.1 (`assets/fonts/LICENSE.txt`).

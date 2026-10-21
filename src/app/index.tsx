@@ -1,5 +1,6 @@
+import { Text } from '@/components/app-text';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Page, Note } from '@/components/ui';
 import { colors as c } from '@/constants/theme';
 import { useSession } from '@/data/session';

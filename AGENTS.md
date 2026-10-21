@@ -9,3 +9,10 @@
 - 검색 결과 없음, 외부 API 오류, 미제공 필드를 구분한다. 경고 미검출을 안전하다고 표현하지 않는다.
 - 건강정보 영구 저장은 동의·권한·삭제·암호화 설계 후 구현한다. 건강정보를 일반 로그에 남기지 않는다.
 - 변경 후 npm run typecheck 및 관련 서버 테스트를 실행한다.
+
+## 커밋 메시지
+
+- Conventional Commits 형식인 `유형: 한글 설명`을 사용한다.
+- 기능은 feat, 수정은 fix, UI·스타일은 style, 문서는 docs, 구조 개선은 refactor, 설정·관리는 chore를 사용한다.
+- 예: `style: 전체 화면에 Pretendard 글꼴 적용`.
+- 글꼴은 공통 Text 컴포넌트와 fonts 토큰을 통해 Pretendard를 사용한다.
