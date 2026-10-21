@@ -1,0 +1,36 @@
+{
+  "name": "nareulbom-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "web": "expo start --web",
+    "server": "node --env-file-if-exists=.env server/index.mjs",
+    "typecheck": "tsc --noEmit",
+    "test:server": "node --test server/*.test.mjs",
+    "export:web": "expo export --platform web"
+  },
+  "dependencies": {
+    "expo": "~57.0.30",
+    "expo-router": "~57.0.28",
+    "expo-constants": "~57.0.13",
+    "expo-linking": "~57.0.13",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-web": "~0.21.0",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  }
+}

@@ -1,0 +1,34 @@
+import type { ReactNode } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors as c } from '@/constants/theme';
+export function Page({ eyebrow, title, description, children }: { eyebrow: string; title: string; description?: string; children: ReactNode }) {
+  return <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.scroll}>
+    <View style={s.container}><Text style={s.eyebrow}>{eyebrow}</Text><Text accessibilityRole="header" style={s.title}>{title}</Text>
+    {description && <Text style={s.description}>{description}</Text>}{children}</View>
+  </ScrollView></SafeAreaView>;
+}
+export function Card({ children, tone = 'white' }: { children: ReactNode; tone?: 'white' | 'green' | 'peach' }) {
+  return <View style={[s.card, { backgroundColor: tone === 'green' ? c.pale : tone === 'peach' ? c.peach : c.paper }]}>{children}</View>;
+}
+export function Heading({ children }: { children: ReactNode }) { return <Text accessibilityRole="header" style={s.heading}>{children}</Text>; }
+export function Body({ children }: { children: ReactNode }) { return <Text style={s.body}>{children}</Text>; }
+export function Note({ children }: { children: ReactNode }) { return <Text style={s.note}>{children}</Text>; }
+export function Button({ label, onPress, secondary = false, disabled = false }: { label: string; onPress: () => void; secondary?: boolean; disabled?: boolean }) {
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [s.button, secondary && s.secondary, { opacity: disabled ? 0.45 : pressed ? 0.75 : 1 }]}>
+    <Text style={[s.buttonText, secondary && { color: c.green }]}>{label}</Text></Pressable>;
+}
+export const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: c.background }, scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 },
+  container: { width: '100%', maxWidth: 680, alignSelf: 'center', gap: 20 },
+  eyebrow: { color: c.green, fontSize: 12, fontWeight: '700', letterSpacing: 0 },
+  title: { fontSize: 28, lineHeight: 39, fontWeight: '700', color: c.ink, letterSpacing: -1 },
+  description: { fontSize: 15, lineHeight: 25, color: c.muted, marginTop: -8 },
+  card: { borderRadius: 14, padding: 20, gap: 13, borderWidth: 1, borderColor: c.line },
+  heading: { fontSize: 19, lineHeight: 28, fontWeight: '700', color: c.ink },
+  body: { fontSize: 15, lineHeight: 25, color: '#62676E' }, note: { fontSize: 12, lineHeight: 20, color: c.muted },
+  button: { minHeight: 48, backgroundColor: c.green, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  secondary: { backgroundColor: c.pale }, buttonText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  input: { minHeight: 52, borderWidth: 1, borderColor: c.line, backgroundColor: c.paper, borderRadius: 10, paddingHorizontal: 16, color: c.ink, fontSize: 16 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+});
