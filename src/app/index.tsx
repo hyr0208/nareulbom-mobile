@@ -3,12 +3,14 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Page, Note } from '@/components/ui';
 import { colors as c } from '@/constants/theme';
+import { healthLabel } from '@/data/medicine-model';
 import { useSession } from '@/data/session';
 
 export default function Home() {
   const router = useRouter();
-  const { medicines, consentAt, ready } = useSession();
-  return <Page eyebrow="나를봄" title="나를 챙기는 일상" description="약 정보부터 매일의 건강관리까지.">
+  const { medicines, consentAt, ready, health } = useSession();
+  return <Page eyebrow="나를봄" title="나를 챙기는 일상" description={health?.profile.goals.length ? `${health.profile.goals.map(goal=>healthLabel('goals',goal)).join(' · ')}부터 함께 챙겨요.` : '약 정보부터 매일의 건강관리까지.'}>
+    <Pressable accessibilityRole="button" accessibilityLabel="건강 프로필 보기" onPress={()=>router.push('/profile')} style={local.profileRow}><View style={{flex:1,gap:5}}><Text style={local.menuTitle}>{health?'내 건강 프로필':'내 몸의 정보를 알려주세요'}</Text><Text style={local.caption}>{health?'입력한 건강정보를 확인하고 수정해요.':'단계별 질문으로 나를 알아가요.'}</Text></View><Text accessible={false} style={local.chevron}>›</Text></Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel="약 검색하기" onPress={() => router.push('/search')} style={({ pressed }) => [local.search, { opacity: pressed ? 0.6 : 1 }]}>
       <View accessible={false} style={local.searchIcon}><View style={local.searchCircle} /><View style={local.searchHandle} /></View>
       <Text style={local.searchText}>궁금한 약을 검색해 보세요</Text>
@@ -30,6 +32,7 @@ export default function Home() {
   </Page>;
 }
 const local = StyleSheet.create({
+  profileRow: {flexDirection:'row',alignItems:'center',gap:12,paddingVertical:18,borderBottomWidth:1,borderColor:c.line},
   search: { flexDirection: 'row', alignItems: 'center', gap: 13, minHeight: 56, paddingHorizontal: 18, borderRadius: 12, backgroundColor: '#F5F6F7', marginTop: 7 },
   searchText: { color: '#73777E', fontSize: 14, flex: 1 }, searchIcon: { width: 18, height: 20 },
   searchCircle: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.6, borderColor: '#747A80', position: 'absolute', top: 1, left: 0 },

@@ -5,7 +5,8 @@ import { fonts } from '@/constants/fonts';
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet, ActivityIndicator, Text as NativeText, type ColorValue } from 'react-native';
-import { SessionProvider } from '@/data/session';
+import { HealthOnboarding } from '@/components/health-onboarding';
+import { SessionProvider, useSession } from '@/data/session';
 import { colors as c } from '@/constants/theme';
 const tabs = [
   { name: 'index', title: '홈', icon: 'home' }, { name: 'search', title: '검색', icon: 'search' },
@@ -22,7 +23,13 @@ export default function Layout() {
   });
   if (error) return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center', padding: 24 }}><NativeText>글꼴을 불러오지 못했어요. 앱을 다시 실행해 주세요.</NativeText></View>;
   if (!loaded) return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator accessibilityLabel="글꼴 불러오는 중" color={c.green} /></View>;
-  return <SessionProvider><StatusBar style="dark" /><Tabs screenOptions={{ headerShown: false,
+  return <SessionProvider><StatusBar style="dark" /><AppContent reducedMotion={reducedMotion} /></SessionProvider>;
+}
+function AppContent({reducedMotion}:{reducedMotion:boolean}) {
+  const {ready,onboardingDone} = useSession();
+  if(!ready) return <View style={{flex:1,backgroundColor:c.paper,justifyContent:'center'}}><ActivityIndicator accessibilityLabel="저장정보 불러오는 중" color={c.green} /></View>;
+  if(!onboardingDone) return <HealthOnboarding />;
+  return <Tabs screenOptions={{ headerShown: false,
     animation: reducedMotion ? 'none' : 'fade',
     transitionSpec: { animation: 'timing', config: { duration: 140 } },
     tabBarButton: props => <AnimatedTabButton {...props} reducedMotion={reducedMotion} />,
@@ -30,7 +37,7 @@ export default function Layout() {
     tabBarStyle: { backgroundColor: c.paper, borderTopColor: c.line }, tabBarLabelStyle: { fontSize: 11, fontFamily: fonts.semibold, fontWeight: 'normal' },
   }}>{tabs.map(tab => <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.title,
     tabBarIcon: ({ color, focused }) => <AnimatedTabIcon focused={focused} reducedMotion={reducedMotion}><TabIcon name={tab.icon} color={color} /></AnimatedTabIcon>,
-  }} />)}</Tabs></SessionProvider>;
+  }} />)}</Tabs>;
 }
 
 function TabIcon({ name, color }: { name: 'home' | 'search' | 'box' | 'guide' | 'user'; color: ColorValue }) {

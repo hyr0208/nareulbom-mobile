@@ -7,7 +7,7 @@ import { StorageStatus } from '@/components/storage-status';
 import { colors } from '@/constants/theme';
 import { createManualMedicine, validateManualFields, type Medicine, type ManualFields } from '@/data/medicine-model';
 import { useSession } from '@/data/session';
-export function ManualMedicineForm({ visible, medicine, initialName = '', onClose }: { visible: boolean; medicine?: Medicine; initialName?: string; onClose: () => void }) {
+export function ManualMedicineForm({ visible, medicine, initialName = '', onClose, navigateOnSave = true }: { navigateOnSave?: boolean; visible: boolean; medicine?: Medicine; initialName?: string; onClose: () => void }) {
   const [name,setName]=useState('');const [strength,setStrength]=useState('');const [manufacturer,setManufacturer]=useState('');
   const [category,setCategory]=useState<ManualFields['category']>('medicine');const [error,setError]=useState('');
   const {addMedicine,updateManualMedicine,ready,busy,consentAt}=useSession();const router=useRouter();
@@ -16,7 +16,7 @@ export function ManualMedicineForm({ visible, medicine, initialName = '', onClos
     setError('');try{
       const fields=validateManualFields({name,strength,manufacturer,category});
       if(medicine)await updateManualMedicine(medicine.id,fields);else await addMedicine(createManualMedicine(fields));
-      onClose();if(!medicine)router.push('/medicines');
+      onClose();if(!medicine&&navigateOnSave)router.push('/medicines');
     }catch(error){setError(error instanceof Error?error.message:'등록하지 못했어요.');}
   }
   return <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>

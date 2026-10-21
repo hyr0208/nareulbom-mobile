@@ -9,7 +9,7 @@ import { colors as c } from '@/constants/theme';
 import { s } from '@/components/ui';
 import { searchDrugs, type Drug } from '@/services/api';
 import { useSession } from '@/data/session';
-export default function Search() {
+export default function Search({onDone}:{onDone?:()=>void} = {}) {
   const [source,setSource]=useState<'easy'|'permit'>('easy');const [submittedSource,setSubmittedSource]=useState<'easy'|'permit'>('easy');
   const [manual,setManual]=useState(false);
   const [query, setQuery] = useState(''); const [submitted, setSubmitted] = useState('');
@@ -43,6 +43,7 @@ export default function Search() {
   }
   return <>
     <Page eyebrow="찾아봄" title="궁금한 약, 찾아보세요." description="제품명으로 검색하고 정확한 약을 확인해요.">
+      {onDone && <Button secondary label="문진으로 돌아가기" onPress={onDone} />}
       <View accessibilityRole="radiogroup" style={{flexDirection:'row',gap:10}}>{([['easy','일반약 설명'],['permit','전체 의약품']] as const).map(([value,label])=><Pressable key={value} accessibilityRole="radio" accessibilityState={{checked:source===value}} onPress={()=>{
         if(source===value)return;active.current?.abort();active.current=null;setLoading(false);setSource(value);setSearched(false);setItems([]);setError('');setPage(0);setTotal(0);setHasMore(false);setSelected(null);
       }} style={{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:source===value?c.green:c.line,backgroundColor:source===value?c.pale:c.paper}}><Text style={{color:c.ink}}>{label}</Text></Pressable>)}</View>
@@ -59,7 +60,7 @@ export default function Search() {
       {loading && <ActivityIndicator accessibilityLabel="검색 중" color={c.green} />}
       {hasMore && <Button secondary label={error ? '다음 결과 다시 불러오기' : '검색 결과 더 보기'} disabled={loading} onPress={() => void search(true)} />}
     </Page>
-    <ManualMedicineForm visible={manual} initialName={query.trim()} onClose={()=>setManual(false)} />
-    <DrugDetail drug={selected} onClose={() => setSelected(null)} />
+    <ManualMedicineForm navigateOnSave={!onDone} visible={manual} initialName={query.trim()} onClose={()=>setManual(false)} />
+    <DrugDetail onShowMedicines={onDone} drug={selected} onClose={() => setSelected(null)} />
   </>;
 }

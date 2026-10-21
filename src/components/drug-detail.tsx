@@ -9,7 +9,7 @@ import { fetchDrug, type Drug } from '@/services/api';
 import type { Medicine } from '@/data/medicine-model';
 import { StorageStatus } from '@/components/storage-status';
 
-export function DrugDetail({ drug, onClose }: { drug: Medicine | null; onClose: () => void }) {
+export function DrugDetail({ drug, onClose, onShowMedicines }: { onShowMedicines?: () => void; drug: Medicine | null; onClose: () => void }) {
   const [confirmed, setConfirmed] = useState(false);
   const [resolved, setResolved] = useState<Drug | null>(null); const [detailError, setDetailError] = useState('');
   const [attempt, setAttempt] = useState(0); const [saveError, setSaveError] = useState('');
@@ -36,7 +36,7 @@ export function DrugDetail({ drug, onClose }: { drug: Medicine | null; onClose: 
       <Button secondary label="상세 닫기" onPress={onClose} />
       <Note>품목기준코드 {drug.id} · 이름·함량·제형을 포장과 비교해 확인해 주세요.</Note>
       <StorageStatus /><Card><Heading>복용함에 등록하기</Heading>
-        {registered ? <><Body>복용함에 등록된 제품이에요.</Body><Button label="복용함 보기" onPress={() => { onClose(); router.push('/medicines'); }} /></> : <>
+        {registered ? <><Body>복용함에 등록된 제품이에요.</Body><Button label="복용함 보기" onPress={() => { onClose(); if(onShowMedicines)onShowMedicines();else router.push('/medicines'); }} /></> : <>
           <Body>복용 중인 제품의 이름과 제조사가 맞는지 확인해 주세요.</Body>
           <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: confirmed }} accessibilityLabel="제품명과 제조사를 확인했어요" onPress={() => setConfirmed(value => !value)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 }}>
             <View style={{ height: 22, width: 22, borderRadius: 5, borderWidth: 1, borderColor: confirmed ? colors.green : colors.muted, backgroundColor: confirmed ? colors.green : colors.paper, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.paper }}>{confirmed ? '✓' : ''}</Text></View>

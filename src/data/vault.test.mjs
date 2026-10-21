@@ -47,7 +47,7 @@ test('snapshots retain only consented product metadata and regimen, excluding cl
   assert.equal(product.effect,undefined);assert.equal(product.usage,undefined);
   const snapshot={version:1,consentVersion:1,consentAt:'2026-10-21T00:00:00Z',medicines:[product]};
   assert.deepEqual(restoreSnapshot(snapshot),snapshot);
-  assert.throws(()=>restoreSnapshot({...snapshot,version:2}));
+  assert.throws(()=>restoreSnapshot({...snapshot,version:3}));
   assert.throws(()=>restoreSnapshot({...snapshot,medicines:[product,product]}));
   assert.throws(()=>restoreSnapshot({...snapshot,medicines:[{...product,regimen:{dose:'1정',mode:'daily',times:['25:00']}}]}));
 });

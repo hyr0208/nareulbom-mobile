@@ -1,17 +1,18 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Drug } from '@/services/api';
 import { deviceStorageAvailable, deviceVault } from './device-vault';
-import { validateManualFields, sameManualProduct, parseRegimen, restoreMedicine, restoreSnapshot, savedMedicine, type Medicine, type Regimen, type Snapshot } from './medicine-model';
-type State = { medicines: Medicine[]; consentAt: string | null };
+import { persistedSnapshot, validateHealthRecord, validateManualFields, sameManualProduct, parseRegimen, restoreMedicine, restoreSnapshot, type Medicine, type Regimen, type HealthRecord } from './medicine-model';
+type State = { medicines: Medicine[]; consentAt: string | null; health: HealthRecord | null; onboardingDone: boolean };
 type Session = State & {
   ready: boolean; busy: boolean; storageAvailable: boolean; storageError: string;
+  finishOnboarding: (health?: HealthRecord) => Promise<void>; eraseHealth: () => Promise<void>;
   updateManualMedicine: (id: string, fields: import('./medicine-model').ManualFields) => Promise<void>;
   addMedicine: (drug: Drug) => Promise<void>; removeMedicine: (id: string) => Promise<void>;
   setRegimen: (id: string, regimen?: Regimen) => Promise<void>;
   enableStorage: () => Promise<void>; eraseAll: () => Promise<void>; retryLoad: () => Promise<void>;
 };
 const Context = createContext<Session | null>(null);
-const emptyState: State = { medicines: [], consentAt: null };
+const emptyState: State = { medicines: [], consentAt: null, health: null, onboardingDone: false };
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(emptyState);
   const current = useRef(state); const locked = useRef(false); const mounted = useRef(true);
@@ -23,7 +24,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       const value = deviceStorageAvailable ? await deviceVault.read() : null;
       const snapshot = value === null ? null : restoreSnapshot(value);
-      const next = snapshot ? { medicines: snapshot.medicines.map(restoreMedicine), consentAt: snapshot.consentAt } : emptyState;
+      const next = snapshot ? { medicines: snapshot.medicines.map(restoreMedicine), consentAt: snapshot.consentAt, health: snapshot.health || null, onboardingDone: snapshot.onboardingDone || false } : emptyState;
       if (mounted.current) { current.current = next; setState(next); blocked.current = false; }
     } catch { if (mounted.current) { blocked.current = true; setStorageError('저장된 정보를 읽지 못했어요. 기기 잠금을 해제하고 다시 불러오거나, 내 정보에서 전체 삭제를 시도해 주세요.'); } }
     finally { locked.current = false; readyRef.current = true; if (mounted.current) { setReady(true); setBusy(false); } }
@@ -37,10 +38,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       let cleanupPending = false;
       if (erase) { if (deviceStorageAvailable) await deviceVault.clear(); blocked.current = false; }
-      else if (next.consentAt && deviceStorageAvailable) {
-        const snapshot: Snapshot = { version: 1, consentVersion: 1, consentAt: next.consentAt, medicines: next.medicines.map(savedMedicine) };
+      else if ((next.consentAt || next.health?.remember || next.onboardingDone) && deviceStorageAvailable) {
+        const snapshot = persistedSnapshot(next)!;
         cleanupPending = (await deviceVault.write(snapshot)).cleanupPending;
       }
+      if (!erase && deviceStorageAvailable && !next.consentAt && !next.health?.remember && !next.onboardingDone && (current.current.consentAt || current.current.health?.remember)) await deviceVault.clear();
       current.current = next;
       if (mounted.current) { setState(next); if (cleanupPending) setStorageError('변경은 저장했지만 이전 임시 저장본 정리가 완료되지 않았어요. 내 정보에서 전체 삭제로 정리할 수 있어요.'); }
     } catch (error) {
@@ -52,7 +54,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   return <Context.Provider value={{ ...state, ready, busy, storageError, storageAvailable: deviceStorageAvailable,
     retryLoad: load,
     enableStorage: () => deviceStorageAvailable ? mutate(old => ({ ...old, consentAt: old.consentAt || new Date().toISOString() })) : Promise.reject(new Error('기기 보관은 모바일 앱에서 이용할 수 있어요.')),
-    eraseAll: () => mutate(() => emptyState, true),
+    eraseAll: () => mutate(() => ({...emptyState,onboardingDone:true}), true),
+    finishOnboarding: health => mutate(old => {
+      const checked = health ? validateHealthRecord(health) : null;
+      if (checked?.remember && !deviceStorageAvailable) throw new Error('웹에서는 건강정보를 보관할 수 없어요.');
+      if (checked && checked.profile.medicationStatus === 'none' && old.medicines.length) throw new Error('등록한 제품이 있어요. 복용 여부를 다시 확인해 주세요.');
+      return {...old, health:checked, onboardingDone:true};
+    }),
+    eraseHealth: () => mutate(old => ({...old,health:null})),
     updateManualMedicine: (id, fields) => mutate(old => {
       const product=old.medicines.find(item=>item.id===id);
       if(!product||product.source!=='manual')throw new Error('직접 등록한 제품만 수정할 수 있어요.');
