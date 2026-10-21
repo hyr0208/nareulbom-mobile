@@ -6,9 +6,20 @@ export type Drug = {
 };
 const baseUrl = (process.env.EXPO_PUBLIC_API_URL ||
   (Platform.OS === 'android' ? 'http://10.0.2.2:8788' : 'http://localhost:8788')).replace(/\/$/, '');
-export async function searchDrugs(query: string, signal?: AbortSignal): Promise<Drug[]> {
-  const response = await fetch(`${baseUrl}/api/drugs?q=${encodeURIComponent(query)}`, { signal });
-  const body = await response.json();
+export type DrugSearchPage = { items: Drug[]; total: number; page: number; pageSize: number; hasMore: boolean };
+export async function searchDrugs(query: string, page = 1, signal?: AbortSignal): Promise<DrugSearchPage> {
+  let response: Response;
+  try { response = await fetch(`${baseUrl}/api/drugs?q=${encodeURIComponent(query)}&page=${page}`, { signal }); }
+  catch (error) {
+    if (signal?.aborted) throw error;
+    throw new Error('검색 서비스에 연결하지 못했어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.');
+  }
+  let body: DrugSearchPage & { message?: string };
+  try { body = await response.json(); }
+  catch { throw new Error('검색 응답을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.'); }
   if (!response.ok) throw new Error(body.message || '검색하지 못했어요. 잠시 후 다시 시도해 주세요.');
-  return body.items;
+  if (!Array.isArray(body.items) || !Number.isSafeInteger(body.total) || body.total < 0 || body.page !== page || body.pageSize !== 20 || typeof body.hasMore !== 'boolean' || body.items.some(item => typeof item?.id !== 'string' || typeof item?.name !== 'string')) {
+    throw new Error('검색 결과 형식이 올바르지 않아요. 잠시 후 다시 시도해 주세요.');
+  }
+  return body;
 }

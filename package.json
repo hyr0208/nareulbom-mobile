@@ -14,7 +14,8 @@
     "server": "node --env-file-if-exists=.env server/index.mjs",
     "typecheck": "tsc --noEmit",
     "test:server": "node --test server/*.test.mjs",
-    "export:web": "expo export --platform web"
+    "export:web": "expo export --platform web",
+    "check:api": "node --env-file-if-exists=.env scripts/check-api.mjs"
   },
   "dependencies": {
     "expo": "~57.0.30",

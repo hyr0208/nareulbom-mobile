@@ -12,7 +12,9 @@ export function createApp({ search = searchDrugs, origin = process.env.CORS_ORIG
       if (url.pathname === '/api/drugs') {
         const query = (url.searchParams.get('q') || '').trim();
         if (!query || query.length > 100) throw new ApiError(400, '검색어를 1~100자로 입력해 주세요.');
-        return send(200, { items: await search(query), source: '식약처 e약은요', limit: 20 });
+        const pageText = url.searchParams.get('page') ?? '1';
+        if (!/^[1-9][0-9]{0,4}$/.test(pageText) || Number(pageText) > 10000) throw new ApiError(400, '올바른 페이지 번호가 필요해요.');
+        return send(200, { ...await search(query, { page: Number(pageText) }), source: '식약처 e약은요' });
       }
       return send(404, { message: '찾을 수 없는 주소예요.' });
     } catch (error) {
