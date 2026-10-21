@@ -11,9 +11,10 @@ import { useSession } from '@/data/session';
 
 const titles = ['나에게 필요한 관리는\n어떤 것인가요?', '기본정보를\n알려주세요', '건강 상태를\n알려주세요', '지금 챙겨 먹는\n제품이 있나요?', '평소의 생활은\n어떤가요?'];
 const descriptions = ['관심 있는 목표를 모두 골라주세요.', '알려주고 싶은 항목만 입력해 주세요.', '진단받은 질환과 알레르기를 구분해 기록해요.', '약과 영양제를 함께 확인해요.', '정확하지 않아도 괜찮아요. 평소를 떠올려 주세요.'];
-export function HealthOnboarding({ onClose }: { onClose?: () => void }) {
+export function HealthOnboarding({ onClose, initialStep = 1 }: { onClose?: () => void; initialStep?: number }) {
   const { health, medicines, ready, busy, storageAvailable, storageError, finishOnboarding, retryLoad, eraseAll } = useSession();
-  const [step, setStep] = useState(health ? 1 : 0);
+  const startStep = Number.isInteger(initialStep) && initialStep >= 1 && initialStep <= 5 ? initialStep : 1;
+  const [step, setStep] = useState(health ? startStep : 0);
   const [draft, setDraft] = useState<HealthProfile>(() => health?.profile || emptyHealthProfile());
   const [accepted, setAccepted] = useState(false);
   const [acceptedAt, setAcceptedAt] = useState(health?.consentAt || '');
@@ -96,7 +97,7 @@ export function HealthOnboarding({ onClose }: { onClose?: () => void }) {
           {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
         </ScrollView>
         <View style={styles.footer}>
-          <View style={styles.primary}><Button label={step===0?(accepted?'동의하고 문진 시작':onClose?'입력하지 않고 돌아가기':'입력 없이 시작하기'):step===6?(onClose?'건강정보 저장':'나를봄 시작하기'):'다음'} disabled={!ready||busy||Boolean(storageError)} onPress={()=>{if(step===0){if(accepted){setAcceptedAt(new Date().toISOString());go(1);}else if(onClose){onClose();}else{void finishOnboarding().catch(e=>setError(e.message));}}else if(step===6)void finish();else next();}} /></View>
+          <View style={styles.primary}><Button label={step===0?(accepted?'동의하고 문진 시작':onClose?'입력하지 않고 돌아가기':'입력 없이 시작하기'):step===6?(onClose?'건강정보 저장':'나를봄 시작하기'):'다음'} disabled={!ready||busy||Boolean(storageError)} onPress={()=>{if(step===0){if(accepted){setAcceptedAt(new Date().toISOString());go(startStep);}else if(onClose){onClose();}else{void finishOnboarding().catch(e=>setError(e.message));}}else if(step===6)void finish();else next();}} /></View>
           {step>0&&step<6&&<Pressable accessibilityRole="button" disabled={busy} onPress={skip} style={styles.skipButton}><Text style={styles.muted}>이 단계는 건너뛰기</Text></Pressable>}
         </View>
 
