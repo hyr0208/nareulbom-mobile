@@ -16,7 +16,8 @@
     "test:server": "node --test server/*.test.mjs",
     "export:web": "expo export --platform web",
     "check:api": "node --env-file-if-exists=.env scripts/check-api.mjs",
-    "test:storage": "node --experimental-strip-types --test src/data/*.test.mjs"
+    "test:storage": "node --experimental-strip-types --test src/data/*.test.mjs",
+    "check:permit": "node --env-file-if-exists=.env scripts/check-permit.mjs"
   },
   "dependencies": {
     "expo": "~57.0.30",

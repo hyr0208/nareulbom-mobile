@@ -1,7 +1,7 @@
 import type { Drug } from '@/services/api';
 export type Regimen = { dose: string; mode: 'daily' | 'asNeeded'; times: string[] };
 export type Medicine = Drug & { detailsLoaded?: boolean; regimen?: Regimen };
-export type SavedMedicine = Pick<Drug, 'id' | 'name' | 'manufacturer' | 'sourceUrl' | 'updatedAt'> & { regimen?: Regimen };
+export type SavedMedicine = Pick<Drug, 'id' | 'name' | 'manufacturer' | 'sourceUrl' | 'updatedAt' | 'source' | 'strength' | 'category' | 'classification' | 'ingredients' | 'permitStatus'> & { regimen?: Regimen };
 export type Snapshot = { version: 1; consentVersion: 1; consentAt: string; medicines: SavedMedicine[] };
 export function parseRegimen(dose: string, mode: Regimen['mode'], input: string): Regimen {
   const cleanedDose = dose.trim();
@@ -13,14 +13,16 @@ export function parseRegimen(dose: string, mode: Regimen['mode'], input: string)
   return { dose: cleanedDose, mode, times: times.sort() };
 }
 export function savedMedicine(item: Medicine): SavedMedicine {
-  return { id: item.id, name: item.name, manufacturer: item.manufacturer, sourceUrl: item.sourceUrl, updatedAt: item.updatedAt, ...(item.regimen ? { regimen: item.regimen } : {}) };
+  return { source: item.source || 'easy', strength: item.strength, category: item.category, classification: item.classification, ingredients: item.ingredients, permitStatus: item.permitStatus, id: item.id, name: item.name, manufacturer: item.manufacturer, sourceUrl: item.sourceUrl, updatedAt: item.updatedAt, ...(item.regimen ? { regimen: item.regimen } : {}) };
 }
 export function restoreSnapshot(value: unknown): Snapshot {
   const snapshot = value as Snapshot;
   if (!snapshot || snapshot.version !== 1 || snapshot.consentVersion !== 1 || typeof snapshot.consentAt !== 'string' || !Number.isFinite(Date.parse(snapshot.consentAt)) || !Array.isArray(snapshot.medicines) || snapshot.medicines.length > 100) throw new Error('저장된 복용 정보 형식을 확인하지 못했어요.');
   const ids = new Set<string>();
   for (const item of snapshot.medicines) {
-    if (!item || typeof item.id !== 'string' || !/^[0-9]{9}$/.test(item.id) || ids.has(item.id) || typeof item.name !== 'string' || !item.name.trim() || typeof item.manufacturer !== 'string' || typeof item.updatedAt !== 'string' || typeof item.sourceUrl !== 'string' || !item.sourceUrl.startsWith('https://nedrug.mfds.go.kr/')) throw new Error('저장된 제품 정보를 확인하지 못했어요.');
+    if (!item || typeof item.id !== 'string' || (item.source === 'manual' ? !/^manual-[a-z0-9]+-[a-z0-9]{8}$/.test(item.id) : !/^[0-9]{9}$/.test(item.id)) || ids.has(item.id) || typeof item.name !== 'string' || !item.name.trim() || typeof item.manufacturer !== 'string' || typeof item.updatedAt !== 'string' || typeof item.sourceUrl !== 'string' || (item.source === 'manual' ? item.sourceUrl !== '' : !item.sourceUrl.startsWith('https://nedrug.mfds.go.kr/'))) throw new Error('저장된 제품 정보를 확인하지 못했어요.');
+    if (item.source !== undefined && !['easy','permit','manual'].includes(item.source)) throw new Error('저장된 정보 출처를 확인하지 못했어요.');
+    if (item.source === 'manual') validateManualFields(item);
     ids.add(item.id);
     if (item.regimen) {
       if (!Array.isArray(item.regimen.times) || item.regimen.times.some(time => typeof time !== 'string')) throw new Error('저장된 복용 시간을 확인하지 못했어요.');
@@ -31,5 +33,22 @@ export function restoreSnapshot(value: unknown): Snapshot {
   return snapshot;
 }
 export function restoreMedicine(item: SavedMedicine): Medicine {
-  return { effect: '', usage: '', warning: '', precaution: '', interaction: '', sideEffect: '', storage: '', ...item, detailsLoaded: false };
+  return { effect: '', usage: '', warning: '', precaution: '', interaction: '', sideEffect: '', storage: '', ...item, detailsLoaded: item.source === 'manual' };
+}
+
+export type ManualFields = { name: string; strength: string; manufacturer: string; category: 'medicine' | 'supplement' };
+export function validateManualFields(input: {name: unknown; strength?: unknown; manufacturer: unknown; category?: unknown}): ManualFields {
+  if(typeof input.name!=='string'||!input.name.trim()||input.name.trim().length>100)throw new Error('제품명을 1~100자로 입력해 주세요.');
+  if(typeof input.manufacturer!=='string'||input.manufacturer.trim().length>100)throw new Error('제조사는 100자 이내로 입력해 주세요.');
+  if(input.strength!==undefined&&(typeof input.strength!=='string'||input.strength.trim().length>60))throw new Error('함량은 60자 이내로 입력해 주세요.');
+  if(!['medicine','supplement'].includes(String(input.category)))throw new Error('제품 종류를 선택해 주세요.');
+  return {name:input.name.trim(),strength:String(input.strength||'').trim(),manufacturer:input.manufacturer.trim(),category:input.category as ManualFields['category']};
+}
+export function createManualMedicine(fields: ManualFields): Medicine {
+  const input=validateManualFields(fields);
+  const id=`manual-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10).padEnd(8,'0')}`;
+  return {...input,id,source:'manual',sourceUrl:'',updatedAt:'',effect:'',usage:'',warning:'',precaution:'',interaction:'',sideEffect:'',storage:'',detailsLoaded:true};
+}
+export function sameManualProduct(a: Medicine, b: Medicine) {
+  return a.source==='manual'&&b.source==='manual'&&a.name.toLocaleLowerCase()===b.name.toLocaleLowerCase()&&(a.strength||'').toLocaleLowerCase()===(b.strength||'').toLocaleLowerCase()&&a.manufacturer.toLocaleLowerCase()===b.manufacturer.toLocaleLowerCase()&&a.category===b.category;
 }

@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Drug } from '@/services/api';
 import { deviceStorageAvailable, deviceVault } from './device-vault';
-import { parseRegimen, restoreMedicine, restoreSnapshot, savedMedicine, type Medicine, type Regimen, type Snapshot } from './medicine-model';
+import { validateManualFields, sameManualProduct, parseRegimen, restoreMedicine, restoreSnapshot, savedMedicine, type Medicine, type Regimen, type Snapshot } from './medicine-model';
 type State = { medicines: Medicine[]; consentAt: string | null };
 type Session = State & {
   ready: boolean; busy: boolean; storageAvailable: boolean; storageError: string;
+  updateManualMedicine: (id: string, fields: import('./medicine-model').ManualFields) => Promise<void>;
   addMedicine: (drug: Drug) => Promise<void>; removeMedicine: (id: string) => Promise<void>;
   setRegimen: (id: string, regimen?: Regimen) => Promise<void>;
   enableStorage: () => Promise<void>; eraseAll: () => Promise<void>; retryLoad: () => Promise<void>;
@@ -31,9 +32,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   async function mutate(change: (old: State) => State, erase = false) {
     if (locked.current || !readyRef.current) throw new Error('저장 작업 중이에요. 잠시 후 다시 시도해 주세요.');
     if (blocked.current && !erase) throw new Error('저장된 정보를 먼저 다시 불러오거나 전체 삭제해 주세요.');
+    const next = change(current.current);
     locked.current = true; setBusy(true); setStorageError('');
     try {
-      const next = change(current.current);
       let cleanupPending = false;
       if (erase) { if (deviceStorageAvailable) await deviceVault.clear(); blocked.current = false; }
       else if (next.consentAt && deviceStorageAvailable) {
@@ -52,8 +53,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     retryLoad: load,
     enableStorage: () => deviceStorageAvailable ? mutate(old => ({ ...old, consentAt: old.consentAt || new Date().toISOString() })) : Promise.reject(new Error('기기 보관은 모바일 앱에서 이용할 수 있어요.')),
     eraseAll: () => mutate(() => emptyState, true),
+    updateManualMedicine: (id, fields) => mutate(old => {
+      const product=old.medicines.find(item=>item.id===id);
+      if(!product||product.source!=='manual')throw new Error('직접 등록한 제품만 수정할 수 있어요.');
+      const next={...product,...validateManualFields(fields)};
+      if(old.medicines.some(item=>item.id!==id&&sameManualProduct(item,next)))throw new Error('동일한 직접 등록 제품이 이미 있어요.');
+      return {...old,medicines:old.medicines.map(item=>item.id===id?next:item)};
+    }),
     addMedicine: drug => mutate(old => {
       if (old.medicines.some(item => item.id === drug.id)) return old;
+      if(drug.source==='manual'){ validateManualFields(drug);if(old.medicines.some(item=>sameManualProduct(item,drug)))throw new Error('동일한 직접 등록 제품이 이미 있어요.'); }
       if (old.medicines.length >= 100) throw new Error('복용함에는 최대 100개 제품을 등록할 수 있어요.');
       return { ...old, medicines: [...old.medicines, { ...drug, detailsLoaded: true }] };
     }),

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createVault } from './vault-core.ts';
-import { parseRegimen, restoreSnapshot, savedMedicine } from './medicine-model.ts';
+import { createManualMedicine, sameManualProduct, restoreMedicine, parseRegimen, restoreSnapshot, savedMedicine } from './medicine-model.ts';
 function memoryStore() {
   const values = new Map();
   const store = { get: async key => values.get(key) ?? null, set: async (key,value) => { values.set(key,value); }, remove: async key => { values.delete(key); } };
@@ -50,4 +50,26 @@ test('snapshots retain only consented product metadata and regimen, excluding cl
   assert.throws(()=>restoreSnapshot({...snapshot,version:2}));
   assert.throws(()=>restoreSnapshot({...snapshot,medicines:[product,product]}));
   assert.throws(()=>restoreSnapshot({...snapshot,medicines:[{...product,regimen:{dose:'1정',mode:'daily',times:['25:00']}}]}));
+});
+
+test('manual product remains unverified after save and restore with its regimen',()=>{
+  const manual=createManualMedicine({name:'  테스트용 직접 약  ',strength:' 50 단위 ',manufacturer:'',category:'medicine'});
+  manual.regimen=parseRegimen('직접 확인한 양','daily','08:00');
+  const snapshot={version:1,consentVersion:1,consentAt:'2026-10-21T00:00:00Z',medicines:[savedMedicine(manual)]};
+  const loaded=restoreMedicine(restoreSnapshot(JSON.parse(JSON.stringify(snapshot))).medicines[0]);
+  assert.equal(loaded.source,'manual');assert.equal(loaded.sourceUrl,'');assert.equal(loaded.name,'테스트용 직접 약');assert.equal(loaded.strength,'50 단위');assert.equal(loaded.detailsLoaded,true);assert.deepEqual(loaded.regimen.times,['08:00']);
+  assert.throws(()=>restoreSnapshot({...snapshot,medicines:[{...snapshot.medicines[0],source:'easy'}]}));
+});
+test('manual validation and duplicate detection keep different strengths separate',()=>{
+  const fields={name:'테스트',strength:'50 단위',manufacturer:'회사',category:'medicine'};
+  const a=createManualMedicine(fields),b=createManualMedicine(fields),c=createManualMedicine({...fields,strength:'100 단위'});
+  assert.equal(sameManualProduct(a,b),true);assert.equal(sameManualProduct(a,c),false);
+  assert.throws(()=>createManualMedicine({...fields,name:'  '}));
+  assert.throws(()=>createManualMedicine({...fields,strength:'a'.repeat(61)}));
+});
+test('old e약은요 records and new permit records preserve their own lookup source',()=>{
+  const base={id:'202106092',name:'시험',manufacturer:'회사',sourceUrl:'https://nedrug.mfds.go.kr/',updatedAt:''};
+  const snapshot={version:1,consentVersion:1,consentAt:'2026-10-21T00:00:00Z',medicines:[base]};
+  assert.equal(restoreMedicine(restoreSnapshot(snapshot).medicines[0]).source,undefined);
+  assert.equal(restoreMedicine(restoreSnapshot({...snapshot,medicines:[{...base,source:'permit'}]}).medicines[0]).source,'permit');
 });

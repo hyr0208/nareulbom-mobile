@@ -23,7 +23,7 @@ export async function searchDrugs(query, { key = process.env.MFDS_SERVICE_KEY, f
   const rows = payload.body?.items;
   if (!Array.isArray(rows) || (page * 20 <= total && rows.length === 0) || rows.some(item => !item?.itemSeq || !item?.itemName)) throw new ApiError(502, '공공데이터 제품 정보를 확인하지 못했어요.');
   const items = rows.map(item => ({
-    id: String(item.itemSeq), name: plain(item.itemName), manufacturer: plain(item.entpName),
+    source: 'easy', id: String(item.itemSeq), name: plain(item.itemName), manufacturer: plain(item.entpName),
     effect: plain(item.efcyQesitm), usage: plain(item.useMethodQesitm), warning: plain(item.atpnWarnQesitm),
     precaution: plain(item.atpnQesitm), interaction: plain(item.intrcQesitm), sideEffect: plain(item.seQesitm),
     storage: plain(item.depositMethodQesitm), updatedAt: plain(item.updateDe),
