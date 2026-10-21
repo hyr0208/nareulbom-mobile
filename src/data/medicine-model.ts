@@ -69,6 +69,7 @@ export const healthOptions = {
   alcohol: [['none', '마시지 않아요'], ['sometimes', '가끔 마셔요'], ['often', '자주 마셔요']],
 } as const;
 export type HealthProfile = {
+  nutrition?: NutritionAnswers;
   goals: string[]; ageBand: string; sex: string; height: string; weight: string;
   conditions: { status: 'unknown' | 'none' | 'yes'; items: string[] };
   allergies: { status: 'unknown' | 'none' | 'yes'; items: string[] };
@@ -101,6 +102,7 @@ export function validateHealthProfile(value: HealthProfile): HealthProfile {
     if (!item || !['unknown','none','yes'].includes(item.status) || !Array.isArray(item.items) || item.items.length > 12 || item.items.some(text => typeof text !== 'string' || text.trim().length > 60) || (item.status !== 'yes' && item.items.length)) throw new Error('질환·알레르기 입력을 확인해 주세요. 항목마다 60자, 최대 12개까지 입력할 수 있어요.');
     result[key] = {status:item.status,items:[...new Set(item.items.map(text => text.trim()).filter(Boolean))]};
   }
+  if (value.nutrition !== undefined) result.nutrition = validateNutritionAnswers(value.nutrition);
   return result;
 }
 export function validateHealthRecord(value: HealthRecord): HealthRecord {
@@ -113,4 +115,31 @@ export function persistedSnapshot(state: {medicines:Medicine[];consentAt:string|
   const health = state.health?.remember ? validateHealthRecord(state.health) : undefined;
   if (!state.consentAt && !health && !state.onboardingDone) return null;
   return {version:2,consentVersion:1,consentAt:state.consentAt,medicines:state.consentAt?state.medicines.map(savedMedicine):[],...(health?{health}:{}),onboardingDone:state.onboardingDone};
+}
+
+
+export const nutritionOptions = {
+  diet: [['vegan','동물성 식품을 먹지 않아요'],['vegetarian','고기·생선을 거의 먹지 않아요'],['mixed','골고루 먹는 편이에요']],
+  fortifiedB12: [['yes','B12 강화식품을 먹어요'],['no','먹지 않아요']],
+  calciumFoods: [['often','자주 먹어요'],['rare','거의 먹지 않아요']],
+  supplements: [['none','먹지 않아요'],['taking','먹고 있어요']],
+  nutrients: [['b12','비타민 B12'],['calcium','칼슘'],['vitaminD','비타민 D'],['other','그 외·성분 모름']],
+  lab: [['unknown','모름'],['not-tested','검사 안 함'],['normal','정상이라고 들었어요'],['low','낮다고 들었어요'],['high','높다고 들었어요']],
+} as const;
+export type NutrientId = 'b12'|'calcium'|'vitaminD';
+export type NutritionAnswers = {
+  version:1;consentAt:string;diet:string;fortifiedB12:string;calciumFoods:string;supplements:string;nutrients:string[];
+  labs:Record<NutrientId,string>;
+};
+export function emptyNutritionAnswers(consentAt:string): NutritionAnswers {
+  return {version:1,consentAt,diet:'',fortifiedB12:'',calciumFoods:'',supplements:'',nutrients:[],labs:{b12:'unknown',calcium:'unknown',vitaminD:'unknown'}};
+}
+export function validateNutritionAnswers(value:NutritionAnswers):NutritionAnswers {
+  if(!value||value.version!==1||typeof value.consentAt!=='string'||!Number.isFinite(Date.parse(value.consentAt)))throw new Error('영양정보 이용 동의를 확인해 주세요.');
+  const result=emptyNutritionAnswers(value.consentAt);
+  for(const key of ['diet','fortifiedB12','calciumFoods','supplements'] as const){if(typeof value[key]!=='string'||(value[key]!==''&&!nutritionOptions[key].some(option=>option[0]===value[key])))throw new Error('식습관·영양제 답변을 확인해 주세요.');result[key]=value[key];}
+  if(!Array.isArray(value.nutrients)||value.nutrients.length>4||new Set(value.nutrients).size!==value.nutrients.length||value.nutrients.some(id=>!nutritionOptions.nutrients.some(option=>option[0]===id))||(value.supplements!=='taking'&&value.nutrients.length))throw new Error('현재 섭취 중인 영양소를 확인해 주세요.');
+  result.nutrients=[...value.nutrients];
+  for(const key of ['b12','calcium','vitaminD'] as const){if(!value.labs||!nutritionOptions.lab.some(option=>option[0]===value.labs[key]))throw new Error('의료진에게 안내받은 검사 결과를 확인해 주세요.');result.labs[key]=value.labs[key];}
+  return result;
 }

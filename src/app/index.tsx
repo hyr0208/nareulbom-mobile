@@ -1,3 +1,4 @@
+import { RecommendationEntry } from '@/components/recommendation-entry';
 import { Text } from '@/components/app-text';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -24,7 +25,8 @@ export default function Home() {
   const goals=health?.profile.goals||[];const focus=focusByGoal[goals[0]];
   function open(target:'/profile'|'/guide'|'/medicines'|'/search',step?:number){if(step)router.push({pathname:'/profile',params:{step:String(step)}});else router.push(target);}
   return <Page eyebrow="나를봄" title="오늘도, 나를 챙겨요" description={health?'알려주신 정보를 바탕으로, 할 일을 정리했어요.':'나의 속도에 맞춰 건강관리를 시작해요.'}>
-    <View style={st.focus}>
+    <RecommendationEntry />
+      <View style={st.focus}>
       <View style={st.sectionHeader}><Text style={st.overline}>나의 관리 목표</Text><Pressable accessibilityRole="button" accessibilityLabel="관리 목표 수정" onPress={()=>open('/profile',1)} style={st.textButton}><Text style={st.link}>{goals.length?'수정':'선택하기'}</Text></Pressable></View>
       {goals.length?<><View style={st.chips}>{goals.map(goal=><View key={goal} style={st.chip}><Text style={st.chipText}>{healthLabel('goals',goal)}</Text></View>)}</View>{focus&&<><Text style={st.body}>{focus.description}</Text><Pressable accessibilityRole="button" onPress={()=>open(focus.target,focus.step)} style={st.focusLink}><Text style={st.link}>{focus.label}</Text><Text accessible={false} style={st.arrow}>›</Text></Pressable></>}</>:<><Text style={st.title}>어떤 관리를 시작하고 싶나요?</Text><Text style={st.body}>목표를 선택하면 이곳에서 이어갈 수 있어요.{!health?' 건강정보 입력은 선택이에요.':''}</Text></>}
     </View>
@@ -42,7 +44,7 @@ export default function Home() {
       {health&&<Note>{health.remember?'건강 프로필은 이 기기에 보관 중이에요.':'건강 프로필은 이번 실행에서만 임시로 유지돼요.'}</Note>}
       <Pressable accessibilityRole="button" accessibilityLabel="건강 가이드 보기" onPress={()=>open('/guide')} style={st.action}><View style={st.copy}><Text style={st.title}>건강정보 알아보기</Text><Text style={st.caption}>공식 출처의 질환·영양소 정보를 살펴봐요.</Text></View><Text accessible={false} style={st.arrow}>›</Text></Pressable>
     </View>
-    <Note>{consentAt?'복용함은 이 기기에 보관 중이에요.':'복용함은 임시 보관 중이에요. 보관 설정은 내 정보에서 관리해요.'}{'\n'}개인별 약·영양제 추천과 상호작용 분석은 준비 중이에요.</Note>
+    <Note>{consentAt?'복용함은 이 기기에 보관 중이에요.':'복용함은 임시 보관 중이에요. 보관 설정은 내 정보에서 관리해요.'}{'\n'}개별 상품·용량 추천과 상호작용 분석은 준비 중이에요.</Note>
   </Page>;
 }
 const st=StyleSheet.create({

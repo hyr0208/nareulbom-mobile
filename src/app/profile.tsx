@@ -8,7 +8,7 @@ import { useSession } from '@/data/session';
 export default function Profile() {
   const router=useRouter(); const params=useLocalSearchParams<{step?:string}>();
   const [initialStep,setInitialStep]=useState(1);
-  const requestedStep=typeof params.step==='string'&&/^[1-5]$/.test(params.step)?Number(params.step):0;
+  const requestedStep=typeof params.step==='string'&&/^[1-6]$/.test(params.step)?Number(params.step):0;
   useEffect(()=>{if(requestedStep){setInitialStep(requestedStep);setEditing(true);router.setParams({step:undefined});}},[requestedStep,router]);
   const [editing,setEditing]=useState(false); const [confirmHealth,setConfirmHealth]=useState(false); const [confirmDelete,setConfirmDelete]=useState(false);
   const [error,setError]=useState(''); const [message,setMessage]=useState('');
@@ -26,7 +26,7 @@ export default function Profile() {
       <Card><Heading>모든 정보 삭제</Heading><Body>건강 프로필, 제품 목록과 복용 일정, 이용·보관 동의를 함께 삭제해요.</Body>
         {confirmDelete?<><Note>삭제한 기록은 복구할 수 없어요.</Note><Button label="모든 정보 삭제하고 동의 철회" disabled={!ready||busy} onPress={()=>{setError('');void eraseAll().then(()=>{setConfirmDelete(false);setConfirmHealth(false);setMessage('모든 정보와 동의를 삭제했어요.');}).catch(e=>setError(e.message));}} /><Button secondary label="전체 삭제 취소" disabled={busy} onPress={()=>setConfirmDelete(false)} /></>:<Button secondary label="모든 정보 삭제 안내" disabled={!ready||busy} onPress={()=>{setMessage('');setConfirmDelete(true);}} />}
       </Card>
-      <Card><Heading>연결 준비 중</Heading><Body>건강정보 기반 약·영양제 추천{`\n`}개인별 상호작용 분석{`\n`}카카오·Apple 로그인과 기기 간 동기화{`\n`}복용 알림</Body></Card>
+      <Card><Heading>연결 준비 중</Heading><Body>개별 영양제 상품·용량 추천{`\n`}개인별 상호작용 분석{`\n`}카카오·Apple 로그인과 기기 간 동기화{`\n`}복용 알림</Body></Card>
       <Note>나를봄 0.1.0 · 개발 미리보기</Note>
     </Page>
     <Modal visible={editing} animationType="slide" presentationStyle="pageSheet" onRequestClose={()=>{if(!busy)setEditing(false);}}>{editing&&<HealthOnboarding initialStep={initialStep} onClose={()=>setEditing(false)} />}</Modal>
