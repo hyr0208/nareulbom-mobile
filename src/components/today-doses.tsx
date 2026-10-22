@@ -1,3 +1,4 @@
+import { AsNeededToday } from '@/components/as-needed-today';
 import { useEffect, useState } from 'react';
 import { AppState, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -24,7 +25,8 @@ export function TodayDoses() {
   const scheduled = rows.filter(row => !row.changed);
   const taken = scheduled.filter(row => row.record?.status === 'taken').length;
   const skipped = scheduled.filter(row => row.record?.status === 'skipped').length;
-  const excluded = medicines.filter(item => item.regimen?.mode !== 'daily').length;
+  const excluded = medicines.filter(item => !item.regimen).length;
+  const hasAsNeeded = medicines.some(item => item.regimen?.mode === 'asNeeded');
   async function record(row: typeof rows[number],status: DoseRecord['status'] | null) {
     setError('');
     try { await recordDose(row,status); }
@@ -45,12 +47,13 @@ export function TodayDoses() {
           </View>}
         </View>)}
         <Note>표시한 시간은 직접 입력한 일정이에요. 미기록은 복용하지 않았다는 뜻이 아니에요. {reminderError ? '알림 연결을 확인해 주세요.' : remindersEnabled ? '복용 알림은 내 정보에서 관리해요.' : '복용 알림은 꺼져 있어요.'}</Note>
-      </> : <View style={st.empty}><Text style={st.name}>오늘 표시할 정해진 시간이 없어요</Text><Note>복용함에서 매일 복용하는 제품의 시간을 입력하면 이곳에 모아드려요.</Note><Button secondary label={medicines.length ? '복용 시간 입력하기' : '복용 제품 등록하기'} onPress={() => router.push(medicines.length ? '/medicines' : '/search')} /></View>}
-      {excluded > 0 && <Note>필요 시 복용·일정 미입력 제품 {excluded}개는 정해진 시간 목록에 포함하지 않아요.</Note>}
+      </> : <View style={st.empty}><Text style={st.name}>{hasAsNeeded ? '매일 정해둔 일정은 없어요' : '오늘 표시할 정해진 시간이 없어요'}</Text><Note>{hasAsNeeded ? '필요 시 제품은 아래에서 복용한 뒤 기록할 수 있어요.' : '복용함에서 매일 복용하는 제품의 시간을 입력하면 이곳에 모아드려요.'}</Note><Button secondary label={hasAsNeeded ? '복용함 확인' : medicines.length ? '복용 시간 입력하기' : '복용 제품 등록하기'} onPress={() => router.push(medicines.length ? '/medicines' : '/search')} /></View>}
+      {excluded > 0 && <Note>일정 미입력 제품 {excluded}개는 정해진 시간 목록에 포함하지 않아요.</Note>}
       {rows.length > 0 && <Pressable accessibilityRole="button" onPress={() => router.push('/profile')} style={st.storageLink}><Text style={st.undoText}>{recordConsentAt ? '복용 기록 기기 보관 중 · 보관 설정' : '복용 기록은 이번 실행에서만 유지돼요 · 보관 설정'}</Text></Pressable>}
       {reminderError && <><Text accessibilityRole="alert" style={st.error}>{reminderError}</Text><Button secondary label="복용 알림 설정 확인" onPress={() => router.push('/profile')} /></>}
       {storageError ? <Text accessibilityRole="alert" style={st.error}>{storageError}</Text> : null}
       {error ? <Text accessibilityRole="alert" style={st.error}>{error}</Text> : null}
+      <AsNeededToday date={date}/>
     </>}
   </View>;
 }

@@ -2,7 +2,7 @@ import type { Drug } from '@/services/api';
 export type Regimen = { dose: string; mode: 'daily' | 'asNeeded'; times: string[] };
 export type Medicine = Drug & { detailsLoaded?: boolean; regimen?: Regimen };
 export type SavedMedicine = Pick<Drug, 'id' | 'name' | 'manufacturer' | 'sourceUrl' | 'updatedAt' | 'source' | 'strength' | 'category' | 'classification' | 'ingredients' | 'permitStatus'> & { regimen?: Regimen };
-export type DoseRecord = { medicineId: string; medicineName: string; date: string; time: string; dose: string; status: 'taken' | 'skipped'; recordedAt: string };
+export type DoseRecord = { medicineId: string; medicineName: string; date: string; time: string; dose: string; status: 'taken' | 'skipped'; recordedAt: string; kind?: 'asNeeded' };
 export type Snapshot = { version: 1 | 2; consentVersion: 1; consentAt: string | null; medicines: SavedMedicine[]; health?: HealthRecord; onboardingDone?: boolean; recordConsentAt?: string; doseRecords?: DoseRecord[]; remindersEnabled?: boolean };
 export function parseRegimen(dose: string, mode: Regimen['mode'], input: string): Regimen {
   const cleanedDose = dose.trim();
@@ -159,11 +159,18 @@ export function validateDoseRecords(records: DoseRecord[], medicines: Pick<Medic
   if (!Array.isArray(records) || records.length > 400) throw new Error('저장된 복용 기록을 확인하지 못했어요.');
   const ids = new Set(medicines.map(item => item.id));
   const keys = new Set<string>();
+  const asNeededKeys = new Set<string>();
   return records.map(record => {
     if (!record || !ids.has(record.medicineId) || typeof record.medicineName !== 'string' || !record.medicineName.trim() || record.medicineName.length > 500 || typeof record.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(record.date) || !Number.isFinite(Date.parse(record.date+'T00:00:00Z')) || new Date(record.date+'T00:00:00Z').toISOString().slice(0,10) !== record.date || typeof record.time !== 'string' || !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(record.time) || typeof record.dose !== 'string' || !record.dose.trim() || record.dose.length > 40 || !['taken','skipped'].includes(record.status) || typeof record.recordedAt !== 'string' || !Number.isFinite(Date.parse(record.recordedAt))) throw new Error('저장된 복용 기록 형식을 확인하지 못했어요.');
-    const key = JSON.stringify([record.medicineId,record.date,record.time,record.dose]);
+    if (record.kind !== undefined && (record.kind !== 'asNeeded' || record.status !== 'taken')) throw new Error('저장된 필요 시 복용 기록을 확인하지 못했어요.');
+    if (record.kind === 'asNeeded') {
+      const actualKey = JSON.stringify([record.medicineId,record.date,record.time]);
+      if (asNeededKeys.has(actualKey)) throw new Error('같은 시각의 필요 시 복용 기록이 중복되어 있어요.');
+      asNeededKeys.add(actualKey);
+    }
+    const key = JSON.stringify([record.medicineId,record.date,record.time,record.dose,...(record.kind ? [record.kind] : [])]);
     if (keys.has(key)) throw new Error('중복된 복용 기록을 확인해 주세요.');
     keys.add(key);
-    return {medicineId:record.medicineId,medicineName:record.medicineName,date:record.date,time:record.time,dose:record.dose,status:record.status,recordedAt:record.recordedAt};
+    return {medicineId:record.medicineId,medicineName:record.medicineName,date:record.date,time:record.time,dose:record.dose,status:record.status,recordedAt:record.recordedAt,...(record.kind ? {kind:record.kind} : {})};
   });
 }

@@ -54,8 +54,8 @@ export default function History() {
       <View style={st.detailHeader}><Heading>{Number(activeDate.slice(5,7))}월 {Number(activeDate.slice(8))}일의 기록</Heading><Note>총 {records.length}건</Note></View>
       {records.length ? <><Text style={st.daySummary}>먹었어요 {counts.taken}건 · 건너뜀 {counts.skipped}건</Text>{records.map(record => <View key={doseKey(record)} style={st.record}>
         <View style={st.recordTop}><Text style={st.time}>{record.time}</Text><Text style={[st.status,record.status === 'taken' && st.taken]}>{record.status === 'taken' ? '먹었어요' : '건너뜀'}</Text></View>
-        <Text style={st.name}>{record.medicineName}</Text><Note>기록 당시 1회 복용량 · {record.dose}</Note><Note>기록 시각 · {new Date(record.recordedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})}</Note>
-      </View>)}<Note>기록 당시의 제품명·일정·복용량이에요. 기록 시각은 실제 복용 시각과 다를 수 있어요.</Note></> : <View style={st.empty}><Body>이 날짜에 남긴 기록이 없어요.</Body><Note>기록이 없다고 복용하지 않았다는 뜻은 아니에요. 과거의 미기록 횟수는 추정하지 않아요.</Note></View>}
+        <Text style={st.name}>{record.medicineName}</Text><Note>{record.kind === 'asNeeded' ? '필요 시 · 직접 입력한 복용 시각' : '매일 · 기록 당시 일정 시각'}</Note><Note>기록 당시 1회 복용량 · {record.dose}</Note><Note>기록 시각 · {new Date(record.recordedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})}</Note>
+      </View>)}<Note>기록 당시의 제품명·복용량이에요. 매일 기록은 일정 시각, 필요 시 기록은 직접 입력한 복용 시각을 보여줘요. 기록 시각은 실제 복용 시각과 다를 수 있어요.</Note></> : <View style={st.empty}><Body>이 날짜에 남긴 기록이 없어요.</Body><Note>기록이 없다고 복용하지 않았다는 뜻은 아니에요. 과거의 미기록 횟수는 추정하지 않아요.</Note></View>}
       {activeDate === window.today && <Button secondary label="오늘의 복용 기록·수정하기" onPress={() => router.replace('/')} />}
       <Note>최근 30일·최대 400개의 남아 있는 기록만 보여요. 제품 삭제·기록 삭제·보관 동의 여부에 따라 보이는 내역이 달라질 수 있어요. 과거 기록은 조회만 할 수 있어요.</Note>
       <Button secondary label="복용 기록 보관 설정" onPress={() => router.push('/profile')} />

@@ -1,13 +1,14 @@
 import { AppState } from 'react-native';
 import { reminderPlan, reminderPlanKey } from './reminder-model';
 import { cancelReminders, reminderPermission, remindersAvailable, syncReminders } from '@/services/reminders';
-import { changeDoseRecord, recentDoseRecords, type DoseSlot } from './dose-model';
+import { recordAsNeededDose, changeDoseRecord, recentDoseRecords, type DoseSlot } from './dose-model';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Drug } from '@/services/api';
 import { deviceStorageAvailable, deviceVault } from './device-vault';
 import { persistedSnapshot, validateHealthRecord, validateManualFields, sameManualProduct, parseRegimen, restoreMedicine, restoreSnapshot, type Medicine, type Regimen, type HealthRecord, type DoseRecord } from './medicine-model';
 type State = { medicines: Medicine[]; consentAt: string | null; health: HealthRecord | null; onboardingDone: boolean; doseRecords: DoseRecord[]; recordConsentAt: string | null; remindersEnabled: boolean };
 type Session = State & {
+  recordAsNeeded: (slot: DoseSlot) => Promise<void>;
   recordDose: (slot: DoseSlot, status: DoseRecord['status'] | null) => Promise<void>; enableRecordStorage: () => Promise<void>; eraseDoseRecords: () => Promise<void>;
   reminderError: string; reminderCount: number; setRemindersEnabled: (enabled: boolean) => Promise<void>; refreshReminders: () => Promise<void>;
   ready: boolean; busy: boolean; storageAvailable: boolean; storageError: string;
@@ -90,6 +91,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (enabled && !reminderPlan(old.medicines,true).length) throw new Error('복용함에서 매일 복용할 시간을 먼저 입력해 주세요.');
       return {...old,remindersEnabled:enabled};
     },false,enabled),
+    recordAsNeeded: slot => mutate(old => ({...old,doseRecords:recordAsNeededDose(old.medicines,old.doseRecords,slot)})),
     recordDose: (slot,status) => mutate(old => ({...old,doseRecords:changeDoseRecord(old.medicines,old.doseRecords,slot,status)})),
     enableRecordStorage: () => deviceStorageAvailable ? mutate(old => {
       if (!old.consentAt) throw new Error('복용함 기기 보관에 먼저 동의해 주세요.');
