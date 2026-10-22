@@ -3,7 +3,7 @@ export type Regimen = { dose: string; mode: 'daily' | 'asNeeded'; times: string[
 export type Medicine = Drug & { detailsLoaded?: boolean; regimen?: Regimen };
 export type SavedMedicine = Pick<Drug, 'id' | 'name' | 'manufacturer' | 'sourceUrl' | 'updatedAt' | 'source' | 'strength' | 'category' | 'classification' | 'ingredients' | 'permitStatus'> & { regimen?: Regimen };
 export type DoseRecord = { medicineId: string; medicineName: string; date: string; time: string; dose: string; status: 'taken' | 'skipped'; recordedAt: string };
-export type Snapshot = { version: 1 | 2; consentVersion: 1; consentAt: string | null; medicines: SavedMedicine[]; health?: HealthRecord; onboardingDone?: boolean; recordConsentAt?: string; doseRecords?: DoseRecord[] };
+export type Snapshot = { version: 1 | 2; consentVersion: 1; consentAt: string | null; medicines: SavedMedicine[]; health?: HealthRecord; onboardingDone?: boolean; recordConsentAt?: string; doseRecords?: DoseRecord[]; remindersEnabled?: boolean };
 export function parseRegimen(dose: string, mode: Regimen['mode'], input: string): Regimen {
   const cleanedDose = dose.trim();
   if (!cleanedDose || cleanedDose.length > 40) throw new Error('1회 복용량을 1~40자로 입력해 주세요.');
@@ -38,6 +38,7 @@ export function restoreSnapshot(value: unknown): Snapshot {
     if (!snapshot.consentAt || typeof snapshot.recordConsentAt !== 'string' || !Number.isFinite(Date.parse(snapshot.recordConsentAt)) || !Array.isArray(snapshot.doseRecords)) throw new Error('복용 기록 보관 동의를 확인하지 못했어요.');
     validateDoseRecords(snapshot.doseRecords, snapshot.medicines);
   }
+  if (snapshot.remindersEnabled !== undefined && (typeof snapshot.remindersEnabled !== 'boolean' || (snapshot.remindersEnabled && !snapshot.consentAt))) throw new Error('복용 알림 설정과 기기 보관 동의를 확인하지 못했어요.');
   return snapshot;
 }
 export function restoreMedicine(item: SavedMedicine): Medicine {
@@ -116,12 +117,14 @@ export function validateHealthRecord(value: HealthRecord): HealthRecord {
 }
 
 
-export function persistedSnapshot(state: {medicines:Medicine[];consentAt:string|null;health:HealthRecord|null;onboardingDone:boolean;recordConsentAt?:string|null;doseRecords?:DoseRecord[]}): Snapshot | null {
+export function persistedSnapshot(state: {medicines:Medicine[];consentAt:string|null;health:HealthRecord|null;onboardingDone:boolean;recordConsentAt?:string|null;doseRecords?:DoseRecord[];remindersEnabled?:boolean}): Snapshot | null {
   const health = state.health?.remember ? validateHealthRecord(state.health) : undefined;
   if (!state.consentAt && !health && !state.onboardingDone) return null;
   if (state.recordConsentAt && !state.consentAt) throw new Error('복용함 보관 동의를 먼저 확인해 주세요.');
+  if (state.remindersEnabled && !state.consentAt) throw new Error('알림을 켜려면 복용함 기기 보관에 먼저 동의해 주세요.');
+  const reminders = state.remindersEnabled ? {remindersEnabled:true} : {};
   const records = state.recordConsentAt ? {recordConsentAt:state.recordConsentAt,doseRecords:validateDoseRecords(state.doseRecords || [],state.medicines)} : {};
-  return {...records,version:2,consentVersion:1,consentAt:state.consentAt,medicines:state.consentAt?state.medicines.map(savedMedicine):[],...(health?{health}:{}),onboardingDone:state.onboardingDone};
+  return {...reminders,...records,version:2,consentVersion:1,consentAt:state.consentAt,medicines:state.consentAt?state.medicines.map(savedMedicine):[],...(health?{health}:{}),onboardingDone:state.onboardingDone};
 }
 
 

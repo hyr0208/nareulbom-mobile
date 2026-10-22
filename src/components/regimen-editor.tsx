@@ -24,7 +24,7 @@ export function RegimenEditor({ medicine, onClose }: { medicine: Medicine; onClo
       {([['daily', '매일'], ['asNeeded', '필요 시']] as const).map(([value, label]) => <Pressable key={value} accessibilityRole="radio" accessibilityState={{ checked: mode === value }} disabled={busy} onPress={() => setMode(value)} style={{ flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: mode === value ? colors.green : colors.line, borderRadius: 10, backgroundColor: mode === value ? colors.pale : colors.paper }}><Text style={{ color: mode === value ? colors.green : colors.muted }}>{label}</Text></Pressable>)}
     </View>
     {mode === 'daily' ? <><Body>복용 시간 (24시간 형식)</Body><TextInput editable={!busy} accessibilityLabel="복용 시간" value={times} onChangeText={setTimes} maxLength={100} autoCapitalize="none" placeholder="08:00, 20:00" placeholderTextColor={colors.muted} style={s.input} /><Note>쉼표로 구분해 최대 8개까지 입력할 수 있어요. 매일 반복하는 일정만 기록할 수 있어요.</Note></> : <Note>필요 시 복용은 정해진 시간을 저장하지 않아요.</Note>}
-    <Note>현재 일정 기록만 지원해요. 복용 알림은 아직 발송하지 않아요.</Note>
+    <Note>복용 알림이 켜져 있으면 시간 변경·일정 삭제가 알림에도 반영돼요. 필요 시 복용에는 알림을 보내지 않아요.</Note>
     {error ? <Body>{error}</Body> : null}
     <Button label="복용 일정 저장" disabled={busy} onPress={() => void save()} />
     {medicine.regimen && <Button secondary label="복용 일정 지우기" disabled={busy} onPress={() => void save(true)} />}

@@ -1,3 +1,4 @@
+import { ReminderSettings } from '@/components/reminder-settings';
 import { DoseRecordStorage } from '@/components/dose-record-storage';
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -24,11 +25,12 @@ export default function Profile() {
       {message?<Body>{message}</Body>:null}{error?<Body>{error}</Body>:null}
       <StorageStatus />
       <DoseRecordStorage />
+      <ReminderSettings />
       {consentAt&&<Note>복용함 기기 보관 동의일: {new Date(consentAt).toLocaleDateString('ko-KR')}</Note>}
       <Card><Heading>모든 정보 삭제</Heading><Body>건강 프로필, 제품 목록과 복용 일정·복용 기록, 이용·보관 동의를 함께 삭제해요.</Body>
         {confirmDelete?<><Note>삭제한 기록은 복구할 수 없어요.</Note><Button label="모든 정보 삭제하고 동의 철회" disabled={!ready||busy} onPress={()=>{setError('');void eraseAll().then(()=>{setConfirmDelete(false);setConfirmHealth(false);setMessage('모든 정보와 동의를 삭제했어요.');}).catch(e=>setError(e.message));}} /><Button secondary label="전체 삭제 취소" disabled={busy} onPress={()=>setConfirmDelete(false)} /></>:<Button secondary label="모든 정보 삭제 안내" disabled={!ready||busy} onPress={()=>{setMessage('');setConfirmDelete(true);}} />}
       </Card>
-      <Card><Heading>연결 준비 중</Heading><Body>개별 영양제 상품·용량 추천{`\n`}개인별 상호작용 분석{`\n`}카카오·Apple 로그인과 기기 간 동기화{`\n`}복용 알림</Body></Card>
+      <Card><Heading>연결 준비 중</Heading><Body>개별 영양제 상품·용량 추천{`\n`}개인별 상호작용 분석{`\n`}카카오·Apple 로그인과 기기 간 동기화</Body></Card>
       <Note>나를봄 0.1.0 · 개발 미리보기</Note>
     </Page>
     <Modal visible={editing} animationType="slide" presentationStyle="pageSheet" onRequestClose={()=>{if(!busy)setEditing(false);}}>{editing&&<HealthOnboarding initialStep={initialStep} onClose={()=>setEditing(false)} />}</Modal>

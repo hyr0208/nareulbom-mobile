@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
+import { listenForReminderOpen } from '@/services/reminders';
 import { AnimatedTabButton, AnimatedTabIcon } from '@/components/animated-tab';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useFonts } from 'expo-font';
 import { fonts } from '@/constants/fonts';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet, ActivityIndicator, Text as NativeText, type ColorValue } from 'react-native';
 import { HealthOnboarding } from '@/components/health-onboarding';
@@ -27,6 +29,14 @@ export default function Layout() {
 }
 function AppContent({reducedMotion}:{reducedMotion:boolean}) {
   const {ready,onboardingDone} = useSession();
+  const router = useRouter();
+  useEffect(() => {
+    if (!ready || !onboardingDone) return;
+    let cancelled = false;
+    let remove: (() => void) | undefined;
+    void listenForReminderOpen(() => { if (!cancelled) router.replace('/'); }).then(cleanup => { if (cancelled) cleanup(); else remove = cleanup; }).catch(() => {});
+    return () => { cancelled = true; remove?.(); };
+  },[ready,onboardingDone,router]);
   if(!ready) return <View style={{flex:1,backgroundColor:c.paper,justifyContent:'center'}}><ActivityIndicator accessibilityLabel="저장정보 불러오는 중" color={c.green} /></View>;
   if(!onboardingDone) return <HealthOnboarding />;
   return <Tabs screenOptions={{ headerShown: false,
