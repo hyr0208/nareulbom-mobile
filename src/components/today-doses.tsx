@@ -32,7 +32,7 @@ export function TodayDoses() {
     finally { setNow(new Date()); }
   }
   return <View style={st.section}>
-    <View style={st.header}><Heading>오늘의 복용</Heading><Text style={st.date}>{now.getMonth()+1}월 {now.getDate()}일</Text></View>
+    <View style={st.header}><Heading>오늘의 복용</Heading><View style={st.historyLink}><Text style={st.date}>{now.getMonth()+1}월 {now.getDate()}일</Text><Pressable accessibilityRole="button" accessibilityLabel="복용 기록 달력 열기" onPress={() => router.push('/history')} style={st.undo}><Text style={st.undoText}>기록 달력 ›</Text></Pressable></View></View>
     {!ready ? <Note>복용 정보를 불러오는 중이에요.</Note> : <>
       {rows.length > 0 ? <>
         <Text style={st.summary}>먹었어요 {taken} · 건너뜀 {skipped} · 미기록 {scheduled.length-taken-skipped}</Text>
@@ -55,7 +55,8 @@ export function TodayDoses() {
   </View>;
 }
 const st = StyleSheet.create({
-  section:{gap:12},header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12},date:{fontSize:13,color:c.muted},summary:{fontSize:13,lineHeight:21,color:c.green},
+  historyLink:{flexDirection:'row',alignItems:'center',gap:8},
+  section:{gap:12},header:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',alignItems:'center',gap:12},date:{fontSize:13,color:c.muted},summary:{fontSize:13,lineHeight:21,color:c.green},
   row:{padding:18,borderWidth:1,borderColor:c.line,borderRadius:16,gap:9},rowHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12},time:{fontSize:18,lineHeight:26,fontWeight:'600',color:c.ink},status:{fontSize:12,color:c.muted},taken:{color:c.green,fontWeight:'600'},name:{fontSize:15,lineHeight:24,fontWeight:'600',color:c.ink},dose:{fontSize:13,lineHeight:21,color:c.muted},
   buttons:{flexDirection:'row',gap:10,marginTop:3},recordButton:{flex:1,minHeight:44,borderRadius:10,backgroundColor:c.pale,alignItems:'center',justifyContent:'center',padding:10},primary:{backgroundColor:c.green},buttonText:{fontSize:13,fontWeight:'600',color:c.green},primaryText:{color:c.paper},recorded:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8},undo:{minHeight:44,paddingHorizontal:8,justifyContent:'center'},undoText:{fontSize:12,lineHeight:21,color:c.green},empty:{padding:18,gap:10,borderRadius:16,backgroundColor:c.pale},storageLink:{minHeight:44,justifyContent:'center'},error:{fontSize:13,lineHeight:22,color:c.amber},
 });

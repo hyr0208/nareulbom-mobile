@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-export type WellnessIconKind = 'nutrition' | 'search' | 'medicines' | 'profile' | 'guide' | 'symptoms';
+export type WellnessIconKind = 'nutrition' | 'search' | 'medicines' | 'profile' | 'guide' | 'symptoms' | 'calendar';
 
 // Decorative, code-drawn pictograms stay crisp at every display density.
 export function WellnessIcon({ kind }: { kind: WellnessIconKind }) {
@@ -16,6 +16,9 @@ export function WellnessIcon({ kind }: { kind: WellnessIconKind }) {
     {kind === 'medicines' && <>
       <View style={s.caseHandle} /><View style={s.case}><View style={s.crossHorizontal} /><View style={s.crossVertical} /></View>
       <View style={s.caseLine} />
+    </>}
+    {kind === 'calendar' && <>
+      <View style={s.calendarPage}><View style={s.calendarTop}/><View style={s.calendarDates}>{Array.from({length:6},(_,index)=><View key={index} style={[s.calendarDate,index === 4 && s.calendarMarked]}/>)}</View></View><View style={s.calendarRingLeft}/><View style={s.calendarRingRight}/>
     </>}
     {kind === 'guide' && <>
       <View style={s.bookLeft}><View style={s.bookLine}/><View style={s.bookLine}/><View style={[s.bookLine,{width:11}]}/></View>
@@ -35,6 +38,7 @@ export function WellnessIcon({ kind }: { kind: WellnessIconKind }) {
 
 const s = StyleSheet.create({
   canvas:{width:56,height:56},
+  calendarPage:{position:'absolute',left:7,top:10,width:43,height:41,borderRadius:8,backgroundColor:'#DCEDE6',overflow:'hidden'},calendarTop:{height:12,backgroundColor:'#89BDA9'},calendarDates:{flexDirection:'row',flexWrap:'wrap',gap:5,padding:7},calendarDate:{width:6,height:6,borderRadius:2,backgroundColor:'#FFFFFF'},calendarMarked:{backgroundColor:'#539A7D'},calendarRingLeft:{position:'absolute',left:17,top:6,width:4,height:11,borderRadius:2,backgroundColor:'#5E9D86'},calendarRingRight:{position:'absolute',right:15,top:6,width:4,height:11,borderRadius:2,backgroundColor:'#5E9D86'},
   bookLeft:{position:'absolute',left:4,top:12,width:24,height:35,borderTopLeftRadius:6,borderBottomLeftRadius:5,backgroundColor:'#9ACDBF',padding:5,paddingTop:10,gap:5,transform:[{skewY:'8deg'}]},
   bookRight:{position:'absolute',right:4,top:12,width:24,height:35,borderTopRightRadius:6,borderBottomRightRadius:5,backgroundColor:'#C5E4DA',padding:5,paddingTop:10,gap:5,transform:[{skewY:'-8deg'}]},
   bookLine:{height:2,width:14,borderRadius:2,backgroundColor:'#F4FBF8'},

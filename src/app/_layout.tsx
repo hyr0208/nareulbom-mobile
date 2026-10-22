@@ -47,7 +47,7 @@ function AppContent({reducedMotion}:{reducedMotion:boolean}) {
     tabBarStyle: { backgroundColor: c.paper, borderTopColor: c.line }, tabBarLabelStyle: { fontSize: 11, fontFamily: fonts.semibold, fontWeight: 'normal' },
   }}>{tabs.map(tab => <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.title,
     tabBarIcon: ({ color, focused }) => <AnimatedTabIcon focused={focused} reducedMotion={reducedMotion}><TabIcon name={tab.icon} color={color} /></AnimatedTabIcon>,
-  }} />)}<Tabs.Screen name="nutrition" options={{href:null,title:"영양소 후보"}} /><Tabs.Screen name="symptoms" options={{href:null,title:"증상별 일반약 안내"}} /></Tabs>;
+  }} />)}<Tabs.Screen name="history" options={{href:null,title:"복용 기록 달력"}} /><Tabs.Screen name="nutrition" options={{href:null,title:"영양소 후보"}} /><Tabs.Screen name="symptoms" options={{href:null,title:"증상별 일반약 안내"}} /></Tabs>;
 }
 
 function TabIcon({ name, color }: { name: 'home' | 'search' | 'box' | 'guide' | 'user'; color: ColorValue }) {

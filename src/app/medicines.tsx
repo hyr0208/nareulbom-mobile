@@ -17,6 +17,7 @@ export default function Medicines() {
   const [error, setError] = useState('');
   const router = useRouter(); const { medicines, removeMedicine, ready, busy } = useSession();
   return <><Page icon="medicines" eyebrow="챙겨봄" title="나의 복용함" description="복용 중인 약과 직접 입력한 일정을 관리해요.">
+    <Button secondary label="복용 기록 달력" onPress={() => router.push('/history')} />
     <StorageStatus />
     <ReminderSettings compact />
     {!ready ? <ActivityIndicator color={colors.green} /> : medicines.length ? medicines.map(drug => <Card key={drug.id}>
