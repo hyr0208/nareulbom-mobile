@@ -1,9 +1,11 @@
+import { changeDoseRecord, recentDoseRecords, type DoseSlot } from './dose-model';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Drug } from '@/services/api';
 import { deviceStorageAvailable, deviceVault } from './device-vault';
-import { persistedSnapshot, validateHealthRecord, validateManualFields, sameManualProduct, parseRegimen, restoreMedicine, restoreSnapshot, type Medicine, type Regimen, type HealthRecord } from './medicine-model';
-type State = { medicines: Medicine[]; consentAt: string | null; health: HealthRecord | null; onboardingDone: boolean };
+import { persistedSnapshot, validateHealthRecord, validateManualFields, sameManualProduct, parseRegimen, restoreMedicine, restoreSnapshot, type Medicine, type Regimen, type HealthRecord, type DoseRecord } from './medicine-model';
+type State = { medicines: Medicine[]; consentAt: string | null; health: HealthRecord | null; onboardingDone: boolean; doseRecords: DoseRecord[]; recordConsentAt: string | null };
 type Session = State & {
+  recordDose: (slot: DoseSlot, status: DoseRecord['status'] | null) => Promise<void>; enableRecordStorage: () => Promise<void>; eraseDoseRecords: () => Promise<void>;
   ready: boolean; busy: boolean; storageAvailable: boolean; storageError: string;
   finishOnboarding: (health?: HealthRecord) => Promise<void>; eraseHealth: () => Promise<void>;
   updateManualMedicine: (id: string, fields: import('./medicine-model').ManualFields) => Promise<void>;
@@ -12,7 +14,7 @@ type Session = State & {
   enableStorage: () => Promise<void>; eraseAll: () => Promise<void>; retryLoad: () => Promise<void>;
 };
 const Context = createContext<Session | null>(null);
-const emptyState: State = { medicines: [], consentAt: null, health: null, onboardingDone: false };
+const emptyState: State = { medicines: [], consentAt: null, health: null, onboardingDone: false, doseRecords: [], recordConsentAt: null };
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(emptyState);
   const current = useRef(state); const locked = useRef(false); const mounted = useRef(true);
@@ -24,7 +26,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       const value = deviceStorageAvailable ? await deviceVault.read() : null;
       const snapshot = value === null ? null : restoreSnapshot(value);
-      const next = snapshot ? { medicines: snapshot.medicines.map(restoreMedicine), consentAt: snapshot.consentAt, health: snapshot.health || null, onboardingDone: snapshot.onboardingDone || false } : emptyState;
+      const next = snapshot ? { medicines: snapshot.medicines.map(restoreMedicine), consentAt: snapshot.consentAt, health: snapshot.health || null, onboardingDone: snapshot.onboardingDone || false, doseRecords: recentDoseRecords(snapshot.doseRecords || []), recordConsentAt: snapshot.recordConsentAt || null } : emptyState;
       if (mounted.current) { current.current = next; setState(next); blocked.current = false; }
     } catch { if (mounted.current) { blocked.current = true; setStorageError('저장된 정보를 읽지 못했어요. 기기 잠금을 해제하고 다시 불러오거나, 내 정보에서 전체 삭제를 시도해 주세요.'); } }
     finally { locked.current = false; readyRef.current = true; if (mounted.current) { setReady(true); setBusy(false); } }
@@ -33,7 +35,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   async function mutate(change: (old: State) => State, erase = false) {
     if (locked.current || !readyRef.current) throw new Error('저장 작업 중이에요. 잠시 후 다시 시도해 주세요.');
     if (blocked.current && !erase) throw new Error('저장된 정보를 먼저 다시 불러오거나 전체 삭제해 주세요.');
-    const next = change(current.current);
+    const changed = change(current.current);
+    const next = {...changed,doseRecords:recentDoseRecords(changed.doseRecords)};
     locked.current = true; setBusy(true); setStorageError('');
     try {
       let cleanupPending = false;
@@ -53,6 +56,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }
   return <Context.Provider value={{ ...state, ready, busy, storageError, storageAvailable: deviceStorageAvailable,
     retryLoad: load,
+    recordDose: (slot,status) => mutate(old => ({...old,doseRecords:changeDoseRecord(old.medicines,old.doseRecords,slot,status)})),
+    enableRecordStorage: () => deviceStorageAvailable ? mutate(old => {
+      if (!old.consentAt) throw new Error('복용함 기기 보관에 먼저 동의해 주세요.');
+      return {...old,recordConsentAt:old.recordConsentAt || new Date().toISOString(),doseRecords:recentDoseRecords(old.doseRecords)};
+    }) : Promise.reject(new Error('기록 보관은 모바일 앱에서 이용할 수 있어요.')),
+    eraseDoseRecords: () => mutate(old => ({...old,doseRecords:[],recordConsentAt:null})),
     enableStorage: () => deviceStorageAvailable ? mutate(old => ({ ...old, consentAt: old.consentAt || new Date().toISOString() })) : Promise.reject(new Error('기기 보관은 모바일 앱에서 이용할 수 있어요.')),
     eraseAll: () => mutate(() => ({...emptyState,onboardingDone:true}), true),
     finishOnboarding: health => mutate(old => {
@@ -75,7 +84,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (old.medicines.length >= 100) throw new Error('복용함에는 최대 100개 제품을 등록할 수 있어요.');
       return { ...old, medicines: [...old.medicines, { ...drug, detailsLoaded: true }] };
     }),
-    removeMedicine: id => mutate(old => ({ ...old, medicines: old.medicines.filter(item => item.id !== id) })),
+    removeMedicine: id => mutate(old => ({ ...old, medicines: old.medicines.filter(item => item.id !== id), doseRecords: old.doseRecords.filter(record => record.medicineId !== id) })),
     setRegimen: (id, regimen) => mutate(old => {
       if (!old.medicines.some(item => item.id === id)) throw new Error('복용함에서 제품을 찾지 못했어요.');
       const checked = regimen ? parseRegimen(regimen.dose, regimen.mode, regimen.times.join(',')) : undefined;

@@ -2,7 +2,8 @@ import type { Drug } from '@/services/api';
 export type Regimen = { dose: string; mode: 'daily' | 'asNeeded'; times: string[] };
 export type Medicine = Drug & { detailsLoaded?: boolean; regimen?: Regimen };
 export type SavedMedicine = Pick<Drug, 'id' | 'name' | 'manufacturer' | 'sourceUrl' | 'updatedAt' | 'source' | 'strength' | 'category' | 'classification' | 'ingredients' | 'permitStatus'> & { regimen?: Regimen };
-export type Snapshot = { version: 1 | 2; consentVersion: 1; consentAt: string | null; medicines: SavedMedicine[]; health?: HealthRecord; onboardingDone?: boolean };
+export type DoseRecord = { medicineId: string; medicineName: string; date: string; time: string; dose: string; status: 'taken' | 'skipped'; recordedAt: string };
+export type Snapshot = { version: 1 | 2; consentVersion: 1; consentAt: string | null; medicines: SavedMedicine[]; health?: HealthRecord; onboardingDone?: boolean; recordConsentAt?: string; doseRecords?: DoseRecord[] };
 export function parseRegimen(dose: string, mode: Regimen['mode'], input: string): Regimen {
   const cleanedDose = dose.trim();
   if (!cleanedDose || cleanedDose.length > 40) throw new Error('1회 복용량을 1~40자로 입력해 주세요.');
@@ -32,6 +33,10 @@ export function restoreSnapshot(value: unknown): Snapshot {
       parseRegimen(item.regimen.dose, item.regimen.mode, item.regimen.times.join(','));
       if (item.regimen.mode === 'asNeeded' && item.regimen.times.length) throw new Error('저장된 복용 방식을 확인하지 못했어요.');
     }
+  }
+  if (snapshot.recordConsentAt !== undefined || snapshot.doseRecords !== undefined) {
+    if (!snapshot.consentAt || typeof snapshot.recordConsentAt !== 'string' || !Number.isFinite(Date.parse(snapshot.recordConsentAt)) || !Array.isArray(snapshot.doseRecords)) throw new Error('복용 기록 보관 동의를 확인하지 못했어요.');
+    validateDoseRecords(snapshot.doseRecords, snapshot.medicines);
   }
   return snapshot;
 }
@@ -111,10 +116,12 @@ export function validateHealthRecord(value: HealthRecord): HealthRecord {
 }
 
 
-export function persistedSnapshot(state: {medicines:Medicine[];consentAt:string|null;health:HealthRecord|null;onboardingDone:boolean}): Snapshot | null {
+export function persistedSnapshot(state: {medicines:Medicine[];consentAt:string|null;health:HealthRecord|null;onboardingDone:boolean;recordConsentAt?:string|null;doseRecords?:DoseRecord[]}): Snapshot | null {
   const health = state.health?.remember ? validateHealthRecord(state.health) : undefined;
   if (!state.consentAt && !health && !state.onboardingDone) return null;
-  return {version:2,consentVersion:1,consentAt:state.consentAt,medicines:state.consentAt?state.medicines.map(savedMedicine):[],...(health?{health}:{}),onboardingDone:state.onboardingDone};
+  if (state.recordConsentAt && !state.consentAt) throw new Error('복용함 보관 동의를 먼저 확인해 주세요.');
+  const records = state.recordConsentAt ? {recordConsentAt:state.recordConsentAt,doseRecords:validateDoseRecords(state.doseRecords || [],state.medicines)} : {};
+  return {...records,version:2,consentVersion:1,consentAt:state.consentAt,medicines:state.consentAt?state.medicines.map(savedMedicine):[],...(health?{health}:{}),onboardingDone:state.onboardingDone};
 }
 
 
@@ -142,4 +149,18 @@ export function validateNutritionAnswers(value:NutritionAnswers):NutritionAnswer
   result.nutrients=[...value.nutrients];
   for(const key of ['b12','calcium','vitaminD'] as const){if(!value.labs||!nutritionOptions.lab.some(option=>option[0]===value.labs[key]))throw new Error('의료진에게 안내받은 검사 결과를 확인해 주세요.');result.labs[key]=value.labs[key];}
   return result;
+}
+
+
+export function validateDoseRecords(records: DoseRecord[], medicines: Pick<Medicine,'id'>[]): DoseRecord[] {
+  if (!Array.isArray(records) || records.length > 400) throw new Error('저장된 복용 기록을 확인하지 못했어요.');
+  const ids = new Set(medicines.map(item => item.id));
+  const keys = new Set<string>();
+  return records.map(record => {
+    if (!record || !ids.has(record.medicineId) || typeof record.medicineName !== 'string' || !record.medicineName.trim() || record.medicineName.length > 500 || typeof record.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(record.date) || !Number.isFinite(Date.parse(record.date+'T00:00:00Z')) || new Date(record.date+'T00:00:00Z').toISOString().slice(0,10) !== record.date || typeof record.time !== 'string' || !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(record.time) || typeof record.dose !== 'string' || !record.dose.trim() || record.dose.length > 40 || !['taken','skipped'].includes(record.status) || typeof record.recordedAt !== 'string' || !Number.isFinite(Date.parse(record.recordedAt))) throw new Error('저장된 복용 기록 형식을 확인하지 못했어요.');
+    const key = JSON.stringify([record.medicineId,record.date,record.time,record.dose]);
+    if (keys.has(key)) throw new Error('중복된 복용 기록을 확인해 주세요.');
+    keys.add(key);
+    return {medicineId:record.medicineId,medicineName:record.medicineName,date:record.date,time:record.time,dose:record.dose,status:record.status,recordedAt:record.recordedAt};
+  });
 }
