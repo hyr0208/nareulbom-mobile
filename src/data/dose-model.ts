@@ -100,3 +100,15 @@ export function recordAsNeededDose(medicines: Medicine[], records: DoseRecord[],
   if (recent.length >= 400) throw new Error('보관 가능한 복용 기록 400개가 찼어요. 내 정보에서 기록을 삭제한 후 다시 시도해 주세요.');
   return [...recent,{medicineId:medicine.id,medicineName:medicine.name,date:input.date,time:input.time,dose:input.dose.trim(),kind:'asNeeded',status:'taken',recordedAt:now.toISOString()}];
 }
+
+// Filter by stable product ID so renamed products and identical names stay separate.
+export function recordsForProduct(records: DoseRecord[], medicineId: string | null): DoseRecord[] {
+  return medicineId === null ? records : records.filter(record => record.medicineId === medicineId);
+}
+export function recordProductOptions(medicines: Medicine[], records: DoseRecord[], window: HistoryWindow) {
+  const kept = records.filter(record => selectableRecordDate(record.date,window));
+  return medicines.map(medicine => ({
+    id:medicine.id, name:medicine.name, manufacturer:medicine.manufacturer, strength:medicine.strength,
+    count:kept.filter(record => record.medicineId === medicine.id).length,
+  })).sort((a,b) => a.name.localeCompare(b.name,'ko') || a.id.localeCompare(b.id));
+}

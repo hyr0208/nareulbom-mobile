@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { firstRecordDateInMonth, recordCalendarMonth, recordHistorySummary, recordHistoryWindow, recordsForDate, selectableRecordDate, shiftRecordMonth } from './dose-model.ts';
+import { firstRecordDateInMonth, recordCalendarMonth, recordHistorySummary, recordHistoryWindow, recordProductOptions, recordsForProduct, recordsForDate, selectableRecordDate, shiftRecordMonth } from './dose-model.ts';
 const now=new Date(2026,9,22,12);
 const window=recordHistoryWindow(now);
 const record=(patch={})=>({medicineId:'test-product',medicineName:'기록 당시 제품명',date:'2026-10-22',time:'08:00',dose:'기록 당시 복용량',status:'taken',recordedAt:'2026-10-22T00:10:00Z',...patch});
@@ -53,4 +53,30 @@ test('history window uses the device day across UTC and daylight-saving boundari
     const child=spawnSync(process.execPath,['--experimental-strip-types','--input-type=module','-e',`import {recordHistoryWindow} from ${JSON.stringify(url)}; process.stdout.write(JSON.stringify(recordHistoryWindow(new Date('2026-03-09T01:30:00Z'))));`],{env:{...process.env,TZ:tz},encoding:'utf8'});
     assert.equal(child.status,0,child.stderr);assert.deepEqual(JSON.parse(child.stdout),expected);
   }
+});
+
+test('product filtering uses IDs across renamed snapshots and identical product names',()=>{
+  const source=[record(),record({medicineName:'이전 제품명',date:'2026-10-21',kind:'asNeeded'}),record({medicineId:'other',medicineName:'기록 당시 제품명',status:'skipped'})];
+  const before=structuredClone(source);
+  const filtered=recordsForProduct(source,'test-product');
+  assert.equal(filtered.length,2);assert.equal(filtered[1].medicineName,'이전 제품명');
+  const summary=recordHistorySummary(filtered,window);assert.equal(summary.taken,2);assert.equal(summary.skipped,0);assert.equal(summary.recordedDays,2);
+  assert.equal(recordsForDate(filtered,'2026-10-22',window).length,1);
+  assert.equal(recordsForProduct(source,null).length,3);assert.deepEqual(recordsForProduct(source,'missing'),[]);assert.deepEqual(source,before);
+});
+test('selector includes products with no records and excludes expired/future counts without merging equal names',()=>{
+  const medicines=[{id:'b',name:'같은 이름',manufacturer:'제조사 B'},{id:'a',name:'같은 이름',manufacturer:'제조사 A',strength:'10mg'},{id:'c',name:'기록 없음',manufacturer:''}];
+  const source=[record({medicineId:'a'}),record({medicineId:'a',kind:'asNeeded',time:'10:00'}),record({medicineId:'b',status:'skipped'}),record({medicineId:'a',date:'2026-09-22'}),record({medicineId:'a',date:'2026-10-23'})];
+  const options=recordProductOptions(medicines,source,window);
+  assert.equal(options.length,3);assert.equal(options.find(item=>item.id==='a').count,2);assert.equal(options.find(item=>item.id==='b').count,1);assert.equal(options.find(item=>item.id==='c').count,0);
+  assert.equal(options.find(item=>item.id==='a').strength,'10mg');assert.equal(options.find(item=>item.id==='b').manufacturer,'제조사 B');
+  assert.deepEqual(recordProductOptions([],source,window),[]);
+});
+test('filtered counts follow undo, deletion and the rolling window without fabricating scheduled events',()=>{
+  const medicines=[{id:'test-product',name:'현재 이름',manufacturer:''}];
+  const source=[record({date:'2026-09-23'})];
+  assert.equal(recordProductOptions(medicines,source,window)[0].count,1);
+  assert.equal(recordProductOptions(medicines,source,recordHistoryWindow(new Date(2026,9,23,12)))[0].count,0);
+  assert.equal(recordProductOptions(medicines,[],window)[0].count,0);
+  const summary=recordHistorySummary(recordsForProduct([],'test-product'),window);assert.equal(summary.taken,0);assert.equal(summary.skipped,0);
 });
