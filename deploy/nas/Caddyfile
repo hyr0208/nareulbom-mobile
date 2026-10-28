@@ -1,0 +1,4 @@
+{$AUTH_DOMAIN} {
+  # 인증 코드·세션을 포함할 수 있으므로 요청 로그를 켜지 않습니다.
+  reverse_proxy api:8788
+}

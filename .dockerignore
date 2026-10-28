@@ -4,3 +4,8 @@ node_modules
 .env.*
 dist
 .expo
+
+**/node_modules
+**/.env*
+**/*.p8
+**/*.pem

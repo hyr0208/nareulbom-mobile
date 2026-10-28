@@ -8,3 +8,28 @@ services:
       PORT: "8788"
       MFDS_SERVICE_KEY: ${MFDS_SERVICE_KEY:-}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8081}
+
+      DATABASE_URL: ${DATABASE_URL:-}
+      AUTH_BASE_URL: ${AUTH_BASE_URL:-http://localhost:8788}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID:-}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:-}
+      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+      APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+      APPLE_PRIVATE_KEY_PATH: ${APPLE_PRIVATE_KEY_PATH:-}
+  # 선택 사항: 기존 PostgreSQL이 있으면 DATABASE_URL만 설정합니다.
+  db:
+    image: postgres:17-alpine
+    profiles: [auth-db]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nareulbom
+      POSTGRES_USER: nareulbom
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - auth-db:/var/lib/postgresql/data
+volumes:
+  auth-db:

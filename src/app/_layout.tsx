@@ -1,3 +1,5 @@
+import { AccountProvider, useAccount } from '@/data/account';
+import { AccountLogin } from '@/components/account-login';
 import { useEffect } from 'react';
 import { listenForReminderOpen } from '@/services/reminders';
 import { AnimatedTabButton, AnimatedTabIcon } from '@/components/animated-tab';
@@ -25,10 +27,11 @@ export default function Layout() {
   });
   if (error) return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center', padding: 24 }}><NativeText>글꼴을 불러오지 못했어요. 앱을 다시 실행해 주세요.</NativeText></View>;
   if (!loaded) return <View style={{ flex: 1, backgroundColor: c.background, justifyContent: 'center' }}><ActivityIndicator accessibilityLabel="글꼴 불러오는 중" color={c.green} /></View>;
-  return <SessionProvider><StatusBar style="dark" /><AppContent reducedMotion={reducedMotion} /></SessionProvider>;
+  return <AccountProvider><SessionProvider><StatusBar style="dark" /><AppContent reducedMotion={reducedMotion} /></SessionProvider></AccountProvider>;
 }
 function AppContent({reducedMotion}:{reducedMotion:boolean}) {
   const {ready,onboardingDone} = useSession();
+  const account = useAccount();
   const router = useRouter();
   useEffect(() => {
     if (!ready || !onboardingDone) return;
@@ -37,7 +40,8 @@ function AppContent({reducedMotion}:{reducedMotion:boolean}) {
     void listenForReminderOpen(() => { if (!cancelled) router.replace('/'); }).then(cleanup => { if (cancelled) cleanup(); else remove = cleanup; }).catch(() => {});
     return () => { cancelled = true; remove?.(); };
   },[ready,onboardingDone,router]);
-  if(!ready) return <View style={{flex:1,backgroundColor:c.paper,justifyContent:'center'}}><ActivityIndicator accessibilityLabel="저장정보 불러오는 중" color={c.green} /></View>;
+  if(!ready || !account.ready) return <View style={{flex:1,backgroundColor:c.paper,justifyContent:'center'}}><ActivityIndicator accessibilityLabel="저장정보 불러오는 중" color={c.green} /></View>;
+  if(!onboardingDone && !account.entryDone) return <AccountLogin />;
   if(!onboardingDone) return <HealthOnboarding />;
   return <Tabs screenOptions={{ headerShown: false,
     animation: reducedMotion ? 'none' : 'fade',
@@ -47,7 +51,7 @@ function AppContent({reducedMotion}:{reducedMotion:boolean}) {
     tabBarStyle: { backgroundColor: c.paper, borderTopColor: c.line }, tabBarLabelStyle: { fontSize: 11, fontFamily: fonts.semibold, fontWeight: 'normal' },
   }}>{tabs.map(tab => <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.title,
     tabBarIcon: ({ color, focused }) => <AnimatedTabIcon focused={focused} reducedMotion={reducedMotion}><TabIcon name={tab.icon} color={color} /></AnimatedTabIcon>,
-  }} />)}<Tabs.Screen name="history" options={{href:null,title:"복용 기록 달력"}} /><Tabs.Screen name="nutrition" options={{href:null,title:"영양소 후보"}} /><Tabs.Screen name="symptoms" options={{href:null,title:"증상별 일반약 안내"}} /></Tabs>;
+  }} />)}<Tabs.Screen name="auth-return" options={{href:null,title:"로그인 확인"}} /><Tabs.Screen name="history" options={{href:null,title:"복용 기록 달력"}} /><Tabs.Screen name="nutrition" options={{href:null,title:"영양소 후보"}} /><Tabs.Screen name="symptoms" options={{href:null,title:"증상별 일반약 안내"}} /></Tabs>;
 }
 
 function TabIcon({ name, color }: { name: 'home' | 'search' | 'box' | 'guide' | 'user'; color: ColorValue }) {

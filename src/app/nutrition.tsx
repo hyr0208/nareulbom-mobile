@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Linking,Modal,StyleSheet,View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Text } from '@/components/app-text';
-import { Page,Card,Heading,Body,Note,Button } from '@/components/ui';
+import { Page,Card,Heading,Body,Note,Button,Expandable } from '@/components/ui';
 import { HealthOnboarding } from '@/components/health-onboarding';
 import { useSession } from '@/data/session';
 import { nutritionCandidates,nutrientInfo } from '@/data/nutrition-model';
@@ -18,11 +18,13 @@ export default function NutritionScreen(){
       {!health?.profile.nutrition?<Card><Heading>나에게 필요한 후보부터 찾아봐요</Heading><Body>식습관과 이미 먹는 영양제, 의료진에게 안내받은 검사 결과에 따라 영양소 검토 후보가 달라져요.</Body><Button label="영양정보 질문에 답하기" onPress={()=>edit(6)} /></Card>:<><View style={st.row}><Text style={st.count}>확인할 영양소 {candidates.length}개</Text><Button secondary label="답변 수정" onPress={()=>edit(6)} /></View><Note>공식 자료의 입력 조건에 따른 초기 후보 안내예요. 전문 임상 검수를 마친 개인별 처방·상품·용량 추천은 아니에요.</Note></>}
       {candidates.map(candidate=>{const info=nutrientInfo[candidate.id];return <Card key={candidate.id}>
         <Text style={st.status}>{statusLabels[candidate.status]}</Text><Heading>{info.name}</Heading><Body>{info.role}</Body>
-        <Text style={st.label}>이 후보가 보이는 이유</Text>{candidate.reasons.map(reason=><Body key={reason}>{reason}</Body>)}
+        <Expandable title="추천 이유와 출처 보기"><Text style={st.label}>이 후보가 보이는 이유</Text>{candidate.reasons.map(reason=><Body key={reason}>{reason}</Body>)}
         <Note>{info.food}</Note>
-        {candidate.checks.length>0&&<View style={st.checks}><Text style={st.label}>먼저 확인해 주세요</Text>{candidate.checks.map(check=><Note key={check}>• {check}</Note>)}</View>}
+
         <Note>출처: 미국 NIH ODS · 영문 원문{'\n'}원문 갱신일 {info.updatedAt} · 앱 확인일 2026-10-21</Note>
         <Button secondary label={`${info.name} 근거 원문 보기`} onPress={()=>{setError('');void Linking.openURL(info.url).catch(()=>setError('원문을 열지 못했어요. 인터넷 연결을 확인해 주세요.'));}} />
+        </Expandable>
+        {candidate.checks.length>0&&<View style={st.checks}><Text style={st.label}>먼저 확인해 주세요</Text>{candidate.checks.map(check=><Note key={check}>• {check}</Note>)}</View>}
       </Card>;})}
       {health?.profile.nutrition&&!candidates.length&&<Card><Heading>현재 답변에서 추가 후보를 찾지 못했어요</Heading><Body>확인한 세 영양소의 조건에 해당하지 않거나 정보가 부족할 수 있어요. 모든 영양소가 충분하거나 안전하다는 뜻은 아니에요.</Body></Card>}
       {questions.length>0&&<View style={{gap:12}}><Heading>조금 더 알려주세요</Heading>{questions.map(question=><Button key={question.label} secondary label={question.label} onPress={()=>edit(question.step)} />)}</View>}

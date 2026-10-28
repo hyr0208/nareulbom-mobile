@@ -1,13 +1,21 @@
 import { searchPermitDrugs, getPermitDrug } from './permit.mjs';
 import http from 'node:http';
 import { ApiError, searchDrugs, getDrug } from './mfds.mjs';
-export function createApp({ search = searchDrugs, detail = getDrug, permitSearch = searchPermitDrugs, permitDetail = getPermitDrug, origin = process.env.CORS_ORIGIN || 'http://localhost:8081' } = {}) {
+export function createApp({ search = searchDrugs, detail = getDrug, permitSearch = searchPermitDrugs, permitDetail = getPermitDrug, authRuntime, origin = process.env.CORS_ORIGIN || 'http://localhost:8081' } = {}) {
   return http.createServer(async (request, response) => {
-    const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, OPTIONS', Vary: 'Origin' };
+    const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers':'Content-Type, Authorization, Expo-Origin, Cookie', 'Access-Control-Allow-Credentials':'true', Vary: 'Origin' };
     const send = (status, body) => { response.writeHead(status, headers); response.end(JSON.stringify(body)); };
     if (request.method === 'OPTIONS') { response.writeHead(204, headers); response.end(); return; }
     try {
       const url = new URL(request.url, 'http://localhost');
+      if (url.pathname === '/api/auth-config' && request.method === 'GET') return send(200, authRuntime ? await authRuntime.status() : {ready:false,kakao:false,apple:false,consentVersion:'2026-10-27'});
+      if (url.pathname.startsWith('/api/auth/')) {
+        if (!authRuntime?.configured) return send(503,{message:'로그인 설정을 준비 중이에요. 로그인 없이 이용할 수 있어요.'});
+        if (!['GET','POST'].includes(request.method)) return send(405,{message:'지원하지 않는 요청이에요.'});
+        if (Number(request.headers['content-length'] || 0) > 16384) return send(413,{message:'요청 내용이 너무 커요.'});
+        for (const [name,value] of Object.entries(headers)) response.setHeader(name,value);
+        return await authRuntime.handler(request,response);
+      }
       if (request.method !== 'GET') return send(405, { message: '지원하지 않는 요청이에요.' });
       if (url.pathname === '/health') return send(200, { status: 'ok', service: 'nareulbom-api', drugSearchConfigured: Boolean(process.env.MFDS_SERVICE_KEY) });
       const source = url.searchParams.get('source') || 'easy';
